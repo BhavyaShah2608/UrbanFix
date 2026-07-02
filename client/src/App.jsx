@@ -6,7 +6,8 @@ import Dashboard from './components/Dashboard';
 import Upload from './components/Upload';
 import Review from './components/Review';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://urbanfix-311.onrender.com';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'https://urbanfix-311.onrender.com';
+const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');

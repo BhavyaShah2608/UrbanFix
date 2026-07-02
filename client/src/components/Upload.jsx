@@ -6,7 +6,8 @@ import {
   CheckCircle, RefreshCw, X, Download
 } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://urbanfix-311.onrender.com';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'https://urbanfix-311.onrender.com';
+const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 export default function Upload({ onUploadSuccess }) {
   const [files, setFiles] = useState([]);
