@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: urbanfix-311-backend
+    runtime: python
+
+    buildCommand: cd server && pip install -r requirements.txt
+
+    startCommand: cd server && uvicorn main:app --host 0.0.0.0 --port $PORT
+
+    envVars:
+      - key: groq_api
+        sync: false
+
+      - key: supabase_url
+        sync: false
+
+      - key: supabase_anon_key
+        sync: false
