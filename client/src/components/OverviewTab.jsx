@@ -161,22 +161,23 @@ export default function OverviewTab({
     }
   };
 
+  const fetchOverviewData = async () => {
+    setOverviewLoading(true);
+    setOverviewError("");
+    try {
+      const res = await axios.get(`${API_BASE_URL}/iot/wards-boundaries`);
+      setOverviewWards(res.data.wards || []);
+    } catch (err) {
+      console.error("Error loading combined risk scores:", err);
+      setOverviewError("Failed to fetch Integrated AMC Risk scores.");
+    } finally {
+      setOverviewLoading(false);
+    }
+  };
+
   // Fetch KML boundaries and integrated combined risk scores for the Overview Heatmap
   useEffect(() => {
     if (dashboardView === 'overview') {
-      const fetchOverviewData = async () => {
-        setOverviewLoading(true);
-        setOverviewError("");
-        try {
-          const res = await axios.get(`${API_BASE_URL}/iot/wards-boundaries`);
-          setOverviewWards(res.data.wards || []);
-        } catch (err) {
-          console.error("Error loading combined risk scores:", err);
-          setOverviewError("Failed to fetch Integrated AMC Risk scores.");
-        } finally {
-          setOverviewLoading(false);
-        }
-      };
       fetchOverviewData();
     }
   }, [dashboardView]);
@@ -241,8 +242,14 @@ export default function OverviewTab({
           </div>
 
           {overviewError && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
-              {overviewError}
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium flex items-center justify-between gap-3">
+              <span>{overviewError}</span>
+              <button
+                onClick={fetchOverviewData}
+                className="px-3 py-1 bg-red-150 hover:bg-red-200 text-red-800 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs border border-red-200"
+              >
+                Retry Connection
+              </button>
             </div>
           )}
 
