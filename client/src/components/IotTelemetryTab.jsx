@@ -284,39 +284,52 @@ export default function IotTelemetryTab({
       <div className="glass-card p-5 rounded-2xl overflow-hidden">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-md font-bold text-slate-800 flex items-center gap-2">
-            <RadioTower size={18} className="text-brand-600 animate-pulse" />
-            Real-Time Sensor Telemetry
+            <RadioTower size={18} className="text-emerald-600 animate-pulse" />
+            Live IoT Sewer Telemetry Dataset
           </h3>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={downloadCSV}
+              className="px-3 py-1.5 bg-emerald-50/50 hover:bg-emerald-100/70 border border-emerald-200 text-emerald-700 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:scale-[1.01]"
+            >
+              <Download size={14} className="text-emerald-600" />
+              Export to CSV
+            </button>
+            <span className="hidden md:inline text-[9px] font-extrabold text-slate-400 uppercase tracking-widest pl-1.5 border-l border-slate-200">
+              Real-Time Sensor Telemetry
+            </span>
+          </div>
         </div>
         <div className="overflow-x-auto overflow-y-auto max-h-[450px] border border-slate-150 rounded-2xl shadow-xs scrollbar-thin">
           <table className="w-full text-left border-collapse text-xs font-sans">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-150 text-slate-400 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10 shadow-xs">
-                <th className="py-3 px-4 bg-slate-50/90">Node / Ward</th>
-                <th className="py-3 px-3 text-right bg-slate-50/90">Nitrogen</th>
-                <th className="py-3 px-3 text-right bg-slate-50/90">Phosphorous</th>
-                <th className="py-3 px-3 text-right bg-slate-50/90">pH</th>
-                <th className="py-3 px-3 text-right bg-slate-50/90">Temp</th>
-                <th className="py-3 px-3 text-right bg-slate-50/90">Hydraulic Flow</th>
-                <th className="py-3 px-3 text-right bg-slate-50/90">Capacity</th>
-                <th className="py-3 px-4 text-center bg-slate-50/90">Telemetry State</th>
-                <th className="py-3 px-4 bg-slate-50/90">Last Updated</th>
+                <th className="py-3 px-4 bg-slate-50/90">Area</th>
+                <th className="py-3 px-4 bg-slate-50/90">Telemetry Date</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right">Nitrogen Level</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right">Phosphorus Level</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-center">Sewage State</th>
+                <th className="py-3 px-4 bg-slate-50/90">State Details</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right">Diameter</th>
+                <th className="py-3 px-4 bg-slate-50/90">Install Method</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700 font-semibold">
               {sortedTelemetryReadings.map((r) => (
                 <tr key={r.device_id} className="hover:bg-slate-50/40 transition-colors">
-                  <td className="py-3 px-4 font-bold text-slate-800">
-                    <div>{r.ward_name}</div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-0.5 font-normal">{r.device_id}</div>
+                  <td className="py-3.5 px-4 font-bold text-slate-800">
+                    {r.ward_name}
                   </td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-600">{r['nitrogen mg/L']} mg/L</td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-600">{r['phosphorous mg/L']} mg/L</td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-600">{r.ph_level}</td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-600">{r.temp_c}°C</td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-600">{r.flow_rate_lps} L/s</td>
-                  <td className="py-3 px-3 text-right font-mono text-slate-800 font-bold">{r.capacity_utilization_pct}%</td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="py-3.5 px-4 text-slate-500 font-medium">
+                    {formatReadingTime(r.date)}
+                  </td>
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-850 font-bold">
+                    {r['nitrogen mg/L']} <span className="text-[10px] text-slate-400 font-normal">mg/L</span>
+                  </td>
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-850 font-bold">
+                    {r['phosphorous mg/L']} <span className="text-[10px] text-slate-400 font-normal">mg/L</span>
+                  </td>
+                  <td className="py-3.5 px-4 text-center">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${stateStyles[r.state_of_sewage]?.badge}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${
                         r.state_of_sewage === 'critical' ? 'bg-red-500 animate-pulse' : r.state_of_sewage === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
@@ -324,7 +337,15 @@ export default function IotTelemetryTab({
                       {stateStyles[r.state_of_sewage]?.label || r.state_of_sewage}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-400 font-mono text-[10px]">{formatReadingTime(r.date)}</td>
+                  <td className="py-3.5 px-4 text-slate-600 font-medium max-w-[200px] truncate" title={r.state_reason}>
+                    {r.state_reason || "Optimal Operations"}
+                  </td>
+                  <td className="py-3.5 px-4 text-right font-bold text-slate-800">
+                    {r.pipe_diameter_mm} <span className="text-[10px] text-slate-400 font-normal">mm</span>
+                  </td>
+                  <td className="py-3.5 px-4 text-slate-600 font-medium">
+                    {r.installation_method || "N/A"}
+                  </td>
                 </tr>
               ))}
             </tbody>

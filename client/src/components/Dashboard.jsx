@@ -51,8 +51,8 @@ export default function Dashboard({
       dataToExport = iotSewerReadings.map(r => ({
         "Area": r.ward_name,
         "Date/Time": formatReadingTime(r.date),
-        "Nitrogen Level (mg/L)": r['nitrogen mg/L'],
-        "Phosphorous Level (mg/L)": r['phosphorous mg/L'],
+        "Nitrogen Level": r['nitrogen mg/L'],
+        "Phosphorus Level": r['phosphorous mg/L'],
         "State of Sewage": r.state_of_sewage,
         "State Reason": r.state_reason,
         "Pipe Diameter (mm)": r.pipe_diameter_mm,
@@ -61,10 +61,10 @@ export default function Dashboard({
         "Pipe Length (m)": r.pipe_length_m,
         "Pipe Depth (m)": r.pipe_depth_m,
         "Connections Count": r.connections_count,
-        "Environmental Conditions": r.environmental_conditions,
+        "Environment Type": r.environmental_conditions,
         "Groundwater Level (m)": r.groundwater_level_m,
-        "Is Blocked": r.is_blocked,
-        "Cause & Maintenance Required": r.maintenance_required,
+        "Is Blocked": r.is_blocked || "N",
+        "Cause & Maintenance": r.maintenance_required,
         "Latitude": r.geo_latitude,
         "Longitude": r.geo_longitude
       }));
