@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Circle, Popup, Polyline, Marker } from 'react-leaflet';
 import axios from 'axios';
 import { 
@@ -7,7 +7,7 @@ import {
   Cell, ScatterChart, Scatter, Line
 } from 'recharts';
 import {
-  Sparkles, Filter, Layers, Binary, BookOpen, MapPin, AlertTriangle, TrendingUp, HelpCircle, X, ChevronRight, RefreshCw, Activity, Loader2, ChevronDown
+  Sparkles, Filter, Layers, Binary, BookOpen, MapPin, AlertTriangle, TrendingUp, HelpCircle, X, ChevronRight, RefreshCw, Activity, Loader2
 } from 'lucide-react';
 import { 
   createIoTMarker, 

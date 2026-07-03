@@ -3,8 +3,7 @@ import axios from 'axios';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { 
   ShieldCheck, CheckCircle, 
-  MapPin, Phone, Info, Edit3, Trash2, Loader2,
-  ChevronDown, X
+  MapPin, Phone, Info, Edit3, Trash2, Loader2, X
 } from 'lucide-react';
 import { CustomDropdown } from './DashboardUtils';
 
