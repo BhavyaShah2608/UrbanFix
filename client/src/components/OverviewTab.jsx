@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polygon, Tooltip, Marker, Popup, Polyline, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
-import { 
+import {
   Activity, Filter, Gauge, MapPin, X, ChevronRight, Layers, Loader2, Database, RadioTower
 } from 'lucide-react';
-import { 
+import {
   MapZoomListener, CustomDropdown
 } from './DashboardUtils';
 
@@ -55,15 +55,15 @@ export default function OverviewTab({
     if (zoom > 14) {
       return complaintsList.map(c => ({ ...c, type: 'single' }));
     }
-    
+
     const gridSize = zoom <= 11 ? 0.015 : zoom <= 12 ? 0.008 : zoom <= 13 ? 0.004 : 0.002;
     const clusters = {};
-    
+
     complaintsList.forEach(comp => {
       const gridLat = Math.round(comp.lat / gridSize) * gridSize;
       const gridLng = Math.round(comp.lng / gridSize) * gridSize;
       const key = `${gridLat.toFixed(5)},${gridLng.toFixed(5)}`;
-      
+
       if (!clusters[key]) {
         clusters[key] = {
           type: 'cluster',
@@ -77,20 +77,20 @@ export default function OverviewTab({
       clusters[key].count += 1;
       clusters[key].complaints.push(comp);
     });
-    
+
     return Object.values(clusters);
   };
 
   const createCustomComplaintIcon = (category, severity) => {
     const color = severity === 'high' ? '#ef4444' : severity === 'medium' ? '#f97316' : '#10b981';
     const bgColor = severity === 'high' ? '#fef2f2' : severity === 'medium' ? '#fffbeb' : '#f0fdf4';
-    
+
     let iconHtml = "📍";
     if (category === "Sewer & Drainage") iconHtml = "💧";
     else if (category === "Roads & Potholes") iconHtml = "🚧";
     else if (category === "Water Supply") iconHtml = "🚰";
     else if (category === "Garbage & Waste") iconHtml = "🗑️";
-    
+
     return L.divIcon({
       html: `
         <div style="
@@ -161,23 +161,22 @@ export default function OverviewTab({
     }
   };
 
-  const fetchOverviewData = async () => {
-    setOverviewLoading(true);
-    setOverviewError("");
-    try {
-      const res = await axios.get(`${API_BASE_URL}/iot/wards-boundaries`);
-      setOverviewWards(res.data.wards || []);
-    } catch (err) {
-      console.error("Error loading combined risk scores:", err);
-      setOverviewError("Failed to fetch Integrated AMC Risk scores.");
-    } finally {
-      setOverviewLoading(false);
-    }
-  };
-
   // Fetch KML boundaries and integrated combined risk scores for the Overview Heatmap
   useEffect(() => {
     if (dashboardView === 'overview') {
+      const fetchOverviewData = async () => {
+        setOverviewLoading(true);
+        setOverviewError("");
+        try {
+          const res = await axios.get(`${API_BASE_URL}/iot/wards-boundaries`);
+          setOverviewWards(res.data.wards || []);
+        } catch (err) {
+          console.error("Error loading combined risk scores:", err);
+          setOverviewError("Failed to fetch Integrated AMC Risk scores.");
+        } finally {
+          setOverviewLoading(false);
+        }
+      };
       fetchOverviewData();
     }
   }, [dashboardView]);
@@ -191,7 +190,7 @@ export default function OverviewTab({
           <span className="font-extrabold text-[15px] tracking-wide uppercase text-slate-900">Urbanfix</span>
           <span className="hidden sm:inline text-[9px] font-bold px-2 py-0.5 bg-brand-50 border border-brand-100 rounded text-brand-600 tracking-wider uppercase">AMC Operations</span>
         </div>
-        
+
         <div className="text-xs sm:text-sm font-bold text-slate-700">
           {currentLayer === 2 && selectedStreetWard ? (
             <span className="flex items-center gap-1.5 bg-brand-50/50 border border-brand-100 px-3 py-1 rounded-full text-brand-700">
@@ -202,13 +201,13 @@ export default function OverviewTab({
             <span className="font-bold text-slate-700 tracking-tight">Ahmedabad Operations Control Center</span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="relative cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg text-slate-400 hover:text-brand-600 transition-all duration-150">
             <RadioTower size={18} />
             <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full leading-relaxed border border-white">7</span>
           </div>
-          
+
           <div className="flex items-center gap-2 border-l border-slate-200 pl-4 h-6">
             <div className="w-7 h-7 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
               AS
@@ -242,14 +241,8 @@ export default function OverviewTab({
           </div>
 
           {overviewError && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium flex items-center justify-between gap-3">
-              <span>{overviewError}</span>
-              <button
-                onClick={fetchOverviewData}
-                className="px-3 py-1 bg-red-150 hover:bg-red-200 text-red-800 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs border border-red-200"
-              >
-                Retry Connection
-              </button>
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
+              {overviewError}
             </div>
           )}
 
@@ -267,7 +260,7 @@ export default function OverviewTab({
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>Critical Risk (&gt;7)</span>
                 </div>
               </div>
-              
+
               <div className="flex-1 w-full relative">
                 {overviewLoading ? (
                   <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center space-y-3">
@@ -282,7 +275,7 @@ export default function OverviewTab({
                     <span className="text-xs font-semibold text-brand-700 animate-pulse">Initializing risk layers...</span>
                   </div>
                 )}
-                
+
                 <MapContainer center={[23.03, 72.56]} zoom={12} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -291,16 +284,16 @@ export default function OverviewTab({
                       load: () => setLayer1TilesLoaded(true)
                     }}
                   />
-                  
+
                   {overviewWards.map((ward) => {
                     return ward.polygons.map((polyCoords, pIdx) => {
                       const isSelected = selectedOverviewWard?.ward_name === ward.ward_name;
-                      const fillColor = ward.combined_risk_score <= 4.0 
-                        ? '#10b981' 
-                        : ward.combined_risk_score <= 7.0 
-                          ? '#f97316' 
+                      const fillColor = ward.combined_risk_score <= 4.0
+                        ? '#10b981'
+                        : ward.combined_risk_score <= 7.0
+                          ? '#f97316'
                           : '#ef4444';
-                          
+
                       return (
                         <Polygon
                           key={`overview-ward-${ward.ward_name}-poly-${pIdx}`}
@@ -386,28 +379,26 @@ export default function OverviewTab({
 
                 {/* Scrollable details */}
                 <div className="flex-1 overflow-y-auto pt-4 space-y-6 pr-1 font-sans">
-                  
+
                   {/* Risk Score Status Panel */}
                   <div className="bg-slate-50/50 p-4 border border-slate-100 rounded-2xl flex items-center gap-4">
-                    <div className={`w-16 h-16 rounded-full flex flex-col items-center justify-center border-4 ${
-                      selectedOverviewWard.risk_level === 'critical' 
-                        ? 'border-red-500 bg-red-50 text-red-700' 
+                    <div className={`w-16 h-16 rounded-full flex flex-col items-center justify-center border-4 ${selectedOverviewWard.risk_level === 'critical'
+                        ? 'border-red-500 bg-red-50 text-red-700'
                         : selectedOverviewWard.risk_level === 'warning'
                           ? 'border-orange-500 bg-orange-50 text-orange-700'
                           : 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    }`}>
+                      }`}>
                       <span className="text-lg font-black leading-none">{selectedOverviewWard.combined_risk_score}</span>
                       <span className="text-[9px] font-bold">/ 10</span>
                     </div>
                     <div>
                       <span className="text-xs font-semibold text-slate-400 tracking-wider uppercase block">Combined Risk Index</span>
-                      <span className={`text-md font-bold uppercase ${
-                        selectedOverviewWard.risk_level === 'critical' 
-                          ? 'text-red-600' 
+                      <span className={`text-md font-bold uppercase ${selectedOverviewWard.risk_level === 'critical'
+                          ? 'text-red-600'
                           : selectedOverviewWard.risk_level === 'warning'
                             ? 'text-orange-500'
                             : 'text-emerald-600'
-                      }`}>
+                        }`}>
                         {selectedOverviewWard.risk_level} Risk Level
                       </span>
                     </div>
@@ -424,8 +415,8 @@ export default function OverviewTab({
                           <span className="text-slate-800">{selectedOverviewWard.iot_risk_score} / 10</span>
                         </div>
                         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-brand-500 rounded-full" 
+                          <div
+                            className="h-full bg-brand-500 rounded-full"
                             style={{ width: `${selectedOverviewWard.iot_risk_score * 10}%` }}
                           ></div>
                         </div>
@@ -438,8 +429,8 @@ export default function OverviewTab({
                           <span className="text-slate-800">{selectedOverviewWard.complaint_risk_score} / 10</span>
                         </div>
                         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-emerald-500 rounded-full" 
+                          <div
+                            className="h-full bg-emerald-500 rounded-full"
                             style={{ width: `${selectedOverviewWard.complaint_risk_score * 10}%` }}
                           ></div>
                         </div>
@@ -454,9 +445,8 @@ export default function OverviewTab({
                       <div className="bg-white p-3 border border-slate-100 rounded-xl shadow-xs">
                         <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">Sewer State</span>
                         <span className="text-sm font-bold text-slate-700 capitalize flex items-center gap-1.5 mt-0.5">
-                          <span className={`w-2 h-2 rounded-full ${
-                            selectedOverviewWard.telemetry.is_blocked === 'Y' ? 'bg-red-500' : 'bg-emerald-500'
-                          }`}></span>
+                          <span className={`w-2 h-2 rounded-full ${selectedOverviewWard.telemetry.is_blocked === 'Y' ? 'bg-red-500' : 'bg-emerald-500'
+                            }`}></span>
                           {selectedOverviewWard.iot_status}
                         </span>
                       </div>
@@ -476,13 +466,13 @@ export default function OverviewTab({
                         <span className="text-sm font-bold text-slate-700 mt-0.5 block">{selectedOverviewWard.telemetry.phosphorous_mg_l} mg/L</span>
                       </div>
                     </div>
-                    
+
                     {/* Additional hydraulic specifications */}
                     <div className="bg-white border border-slate-150 rounded-xl shadow-xs overflow-hidden divide-y divide-slate-100 text-xs">
                       <div className="p-3.5 flex justify-between items-center hover:bg-slate-50/35 transition-colors">
                         <span className="font-semibold text-slate-500">Pipeline Diameter</span>
                         <span className="font-bold text-slate-800 flex items-center gap-1">
-                          {selectedOverviewWard.telemetry.pipe_diameter_mm} mm 
+                          {selectedOverviewWard.telemetry.pipe_diameter_mm} mm
                           <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded uppercase">{selectedOverviewWard.telemetry.installation_method}</span>
                         </span>
                       </div>
@@ -492,9 +482,8 @@ export default function OverviewTab({
                       </div>
                       <div className="p-3.5 flex justify-between items-center hover:bg-slate-50/35 transition-colors">
                         <span className="font-semibold text-slate-500">Surcharging Blockage</span>
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${
-                          selectedOverviewWard.telemetry.is_blocked === 'Y' ? 'bg-rose-50 text-rose-700 border-rose-100/60' : 'bg-emerald-50 text-emerald-700 border-emerald-100/60'
-                        }`}>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${selectedOverviewWard.telemetry.is_blocked === 'Y' ? 'bg-rose-50 text-rose-700 border-rose-100/60' : 'bg-emerald-50 text-emerald-700 border-emerald-100/60'
+                          }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${selectedOverviewWard.telemetry.is_blocked === 'Y' ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`}></span>
                           {selectedOverviewWard.telemetry.is_blocked === 'Y' ? 'Active Blockage' : 'Active Flow'}
                         </span>
@@ -520,7 +509,7 @@ export default function OverviewTab({
                                 {comp.category}
                               </span>
                               <span className="text-[10px] font-semibold text-slate-400 font-mono">
-                                {comp.date_filed ? new Date(comp.date_filed).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) : 'N/A'}
+                                {comp.date_filed ? new Date(comp.date_filed).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                               </span>
                             </div>
                             <p className="text-xs text-slate-700 font-medium leading-relaxed">
@@ -528,16 +517,14 @@ export default function OverviewTab({
                             </p>
                             <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400 pt-0.5">
                               <span className="font-mono text-[9px] text-slate-400 group-hover:text-slate-500 transition-colors">ID: {comp.complaint_id}</span>
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${
-                                comp.severity === 'high' || comp.severity === 'critical' ? 'bg-rose-50 text-rose-700 border-rose-100/50' :
-                                comp.severity === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-100/50' :
-                                'bg-emerald-50 text-emerald-700 border-emerald-100/50'
-                              }`}>
-                                <span className={`w-1 h-1 rounded-full ${
-                                  comp.severity === 'high' || comp.severity === 'critical' ? 'bg-rose-500 animate-pulse' :
-                                  comp.severity === 'medium' ? 'bg-amber-500' :
-                                  'bg-emerald-500'
-                                }`}></span>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${comp.severity === 'high' || comp.severity === 'critical' ? 'bg-rose-50 text-rose-700 border-rose-100/50' :
+                                  comp.severity === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-100/50' :
+                                    'bg-emerald-50 text-emerald-700 border-emerald-100/50'
+                                }`}>
+                                <span className={`w-1 h-1 rounded-full ${comp.severity === 'high' || comp.severity === 'critical' ? 'bg-rose-500 animate-pulse' :
+                                    comp.severity === 'medium' ? 'bg-amber-500' :
+                                      'bg-emerald-500'
+                                  }`}></span>
                                 {comp.severity}
                               </span>
                             </div>
@@ -606,12 +593,12 @@ export default function OverviewTab({
           {/* Breadcrumb Navigation */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-              <button 
+              <button
                 onClick={() => {
                   setCurrentLayer(1);
                   setSelectedStreetWard(null);
                   setStreetData(null);
-                }} 
+                }}
                 className="text-brand-600 hover:text-brand-800 transition-colors flex items-center gap-1.5"
               >
                 <Activity size={14} /> Ahmedabad Map
@@ -636,8 +623,8 @@ export default function OverviewTab({
           {streetError && (
             <div className="p-6 bg-red-50 border border-red-200 text-red-700 rounded-2xl shadow-sm text-sm font-semibold flex flex-col items-center gap-3">
               <span>{streetError}</span>
-              <button 
-                onClick={() => fetchStreetData(selectedStreetWard.ward_name)} 
+              <button
+                onClick={() => fetchStreetData(selectedStreetWard.ward_name)}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all"
               >
                 Retry Analytics Query
@@ -648,52 +635,52 @@ export default function OverviewTab({
           {streetData && !streetLoading && (
             <div className="space-y-6">
               <div className="flex flex-col lg:flex-row gap-6 relative min-h-[600px]">
-                
+
                 {/* Left Overlay Toggle Panel (200px) */}
                 <div className="w-full lg:w-[200px] flex flex-col gap-4 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Map Overlays</span>
                   <div className="flex flex-col gap-3">
                     <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={showStreetComplaints} 
+                      <input
+                        type="checkbox"
+                        checked={showStreetComplaints}
                         onChange={() => setShowStreetComplaints(!showStreetComplaints)}
-                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4" 
+                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
                       />
                       <span>311 Complaints</span>
                     </label>
-                    
+
                     <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={showStreetSensors} 
+                      <input
+                        type="checkbox"
+                        checked={showStreetSensors}
                         onChange={() => setShowStreetSensors(!showStreetSensors)}
-                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4" 
+                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
                       />
                       <span>IoT Telemetry</span>
                     </label>
-                    
+
                     <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={showStreetRisk} 
+                      <input
+                        type="checkbox"
+                        checked={showStreetRisk}
                         onChange={() => setShowStreetRisk(!showStreetRisk)}
-                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4" 
+                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
                       />
                       <span>Street Risk</span>
                     </label>
-                    
+
                     <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={showStreetInfra} 
+                      <input
+                        type="checkbox"
+                        checked={showStreetInfra}
                         onChange={() => setShowStreetInfra(!showStreetInfra)}
-                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4" 
+                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
                       />
                       <span>Infrastructure Age</span>
                     </label>
                   </div>
-                  
+
                   <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2.5 text-[10px] text-slate-400">
                     <span className="font-bold uppercase tracking-wider block">Risk Legend</span>
                     <span className="flex items-center gap-1.5 font-semibold text-slate-600">
@@ -722,7 +709,7 @@ export default function OverviewTab({
                       Timeline Context: {['Jan', 'Feb', 'Mar', 'Apr', 'May (Live)'][selectedMonth]}
                     </div>
                   </div>
-                  
+
                   <div className="flex-1 w-full relative">
                     {!layer2TilesLoaded && (
                       <div className="absolute inset-0 z-[1000] shimmer-loader flex flex-col items-center justify-center space-y-2 pointer-events-none rounded-xl">
@@ -730,12 +717,12 @@ export default function OverviewTab({
                         <span className="text-xs font-semibold text-brand-700 animate-pulse">Initializing street canvas...</span>
                       </div>
                     )}
-                    
-                    <MapContainer 
-                      key={`${selectedStreetWard?.ward_name}-street-map`} 
-                      center={streetData.center} 
-                      zoom={15} 
-                      style={{ height: '100%', width: '100%' }} 
+
+                    <MapContainer
+                      key={`${selectedStreetWard?.ward_name}-street-map`}
+                      center={streetData.center}
+                      zoom={15}
+                      style={{ height: '100%', width: '100%' }}
                       scrollWheelZoom={true}
                     >
                       <TileLayer
@@ -751,7 +738,7 @@ export default function OverviewTab({
                       {(showStreetRisk || showStreetInfra) && streetData.streets.map((street, idx) => {
                         const currentRisk = street.monthly_risk[selectedMonth];
                         let strokeColor = '#10b981';
-                        
+
                         if (currentRisk > 70) {
                           strokeColor = '#ef4444';
                         } else if (currentRisk > 40) {
@@ -839,12 +826,12 @@ export default function OverviewTab({
                             </Marker>
                           );
                         } else {
-                          const fillColor = item.severity === 'high' 
-                            ? '#ef4444' 
-                            : item.severity === 'medium' 
-                              ? '#f97316' 
+                          const fillColor = item.severity === 'high'
+                            ? '#ef4444'
+                            : item.severity === 'medium'
+                              ? '#f97316'
                               : '#10b981';
-                              
+
                           return (
                             <Marker
                               key={`comp-${idx}`}
@@ -854,7 +841,7 @@ export default function OverviewTab({
                               <Popup>
                                 <div className="font-sans text-xs p-1.5 min-w-[200px] space-y-1.5">
                                   <div className="flex justify-between items-center">
-                                    <span 
+                                    <span
                                       className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border"
                                       style={{
                                         color: fillColor,
@@ -930,24 +917,24 @@ export default function OverviewTab({
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Risk Severity Rankings</span>
                     <span className="text-[10px] text-slate-400">Current playback: {['Jan', 'Feb', 'Mar', 'Apr', 'May (Live)'][selectedMonth]}</span>
                   </div>
-                  
+
                   <div className="flex-1 flex flex-col gap-3.5 overflow-y-auto max-h-[480px]">
                     {streetData.streets
                       .map(s => ({ ...s, currentRisk: s.monthly_risk[selectedMonth] }))
                       .sort((a, b) => b.currentRisk - a.currentRisk)
                       .map((street, idx) => {
-                        const barColor = street.currentRisk > 70 
-                          ? 'bg-red-500' 
-                          : street.currentRisk > 40 
-                            ? 'bg-orange-500' 
+                        const barColor = street.currentRisk > 70
+                          ? 'bg-red-500'
+                          : street.currentRisk > 40
+                            ? 'bg-orange-500'
                             : 'bg-emerald-500';
-                            
-                        const textColor = street.currentRisk > 70 
-                          ? 'text-red-600' 
-                          : street.currentRisk > 40 
-                            ? 'text-orange-500' 
+
+                        const textColor = street.currentRisk > 70
+                          ? 'text-red-600'
+                          : street.currentRisk > 40
+                            ? 'text-orange-500'
                             : 'text-emerald-600';
-                            
+
                         return (
                           <div key={idx} className="bg-slate-50/50 border border-slate-100 p-3 rounded-xl flex flex-col gap-2 shadow-xs">
                             <div className="flex justify-between items-start">
@@ -982,11 +969,11 @@ export default function OverviewTab({
                 </div>
                 <div className="flex-1 flex items-center gap-4 w-full">
                   <span className="text-[10px] font-bold text-slate-400">Jan</span>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="4" 
-                    value={selectedMonth} 
+                  <input
+                    type="range"
+                    min="0"
+                    max="4"
+                    value={selectedMonth}
                     onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
                     className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-600 focus:outline-none"
                   />
