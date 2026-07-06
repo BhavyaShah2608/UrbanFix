@@ -155,14 +155,6 @@ export default function Dashboard({
             </button>
           )}
 
-          <CustomDropdown
-            value={dashboardView}
-            onChange={setDashboardView}
-            options={dashboardViewOptions}
-            className="w-full sm:w-60"
-            leftIcon={<Filter size={14} />}
-          />
-
           {dashboardView !== 'iot' && (
             <CustomDropdown
               value={selectedBatch}
@@ -172,6 +164,14 @@ export default function Dashboard({
               leftIcon={<Database size={14} />}
             />
           )}
+
+          <CustomDropdown
+            value={dashboardView}
+            onChange={setDashboardView}
+            options={dashboardViewOptions}
+            className="w-full sm:w-60"
+            leftIcon={<Filter size={14} />}
+          />
         </div>
       </div>
 
