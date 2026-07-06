@@ -44,14 +44,14 @@ export default function IngestedReportsTab({
     : flaggedRecords.filter((record) => record.batch_id === selectedBatch);
 
   const uniqueCategories = useMemo(() => {
-    const cats = new Set(structuredRecords.map(r => r.complaint_category).filter(Boolean));
+    const cats = new Set(filteredStructured.map(r => r.complaint_category).filter(Boolean));
     return Array.from(cats).sort();
-  }, [structuredRecords]);
+  }, [filteredStructured]);
 
   const uniqueWards = useMemo(() => {
-    const wrds = new Set(structuredRecords.map(r => r.ward_name).filter(Boolean));
+    const wrds = new Set(filteredStructured.map(r => r.ward_name).filter(Boolean));
     return Array.from(wrds).sort();
-  }, [structuredRecords]);
+  }, [filteredStructured]);
 
   const filteredAndSortedRecords = useMemo(() => {
     let records = [...filteredStructured];
@@ -510,6 +510,29 @@ export default function IngestedReportsTab({
               </tr>
             </thead>
             <tbody key={`${selectedBatch}-${sortBy}-${searchTerm}-${filterCategory}-${filterSeverity}-${filterWard}`} className="divide-y divide-slate-100 text-slate-700 font-semibold animate-in fade-in duration-200">
+              {filteredAndSortedRecords.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400 font-medium font-sans">
+                    <div className="flex flex-col items-center gap-2 justify-center">
+                      <Search size={24} className="text-slate-300 stroke-[1.5]" />
+                      <p className="text-xs">No matching structured complaints found.</p>
+                      {(searchTerm || filterCategory !== 'all' || filterSeverity !== 'all' || filterWard !== 'all') && (
+                        <button
+                          onClick={() => {
+                            setSearchTerm('');
+                            setFilterCategory('all');
+                            setFilterSeverity('all');
+                            setFilterWard('all');
+                          }}
+                          className="text-[10px] font-extrabold text-brand-600 hover:text-brand-700 underline mt-1 cursor-pointer"
+                        >
+                          Reset search & filters
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
               {paddingTop > 0 && (
                 <tr>
                   <td colSpan={7} style={{ height: `${paddingTop}px` }} />
