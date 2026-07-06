@@ -118,3 +118,22 @@ textarea:focus-visible {
   outline-offset: 2px !important;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
 }
+
+@keyframes map-glow {
+  0% {
+    fill-opacity: 0.95;
+    stroke-opacity: 0.9;
+  }
+  50% {
+    fill-opacity: 0.45;
+    stroke-opacity: 0.4;
+  }
+  100% {
+    fill-opacity: 0.95;
+    stroke-opacity: 0.9;
+  }
+}
+
+.ingested-hotspot-marker {
+  animation: map-glow 3s ease-in-out infinite;
+}

@@ -1,28 +1,28 @@
 /* eslint-disable react-hooks/exhaustive-deps, react-hooks/incompatible-library */
-import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { MapContainer, TileLayer, Popup, CircleMarker } from 'react-leaflet';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend 
 } from 'recharts';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
-  CheckCircle2, AlertTriangle, Gauge, Database, Download, MapPin, Activity
+  CheckCircle2, AlertTriangle, Gauge, Database, MapPin, Activity
 } from 'lucide-react';
 import { 
-  createComplaintMarker, 
-  MapRecenter 
+  MapRecenter,
+  CustomDropdown
 } from './DashboardUtils';
 
 export default function IngestedReportsTab({
   structuredRecords = [],
   quarantineRecords = [],
   flaggedRecords = [],
-  selectedBatch,
-  downloadCSV
+  selectedBatch
 }) {
   const [mapCenter, setMapCenter] = useState([23.0225, 72.5714]);
   const [mapZoom, setMapZoom] = useState(12);
+  const [sortBy, setSortBy] = useState('confidence_desc');
 
   const filteredStructured = selectedBatch === 'all'
     ? structuredRecords
@@ -36,10 +36,48 @@ export default function IngestedReportsTab({
     ? flaggedRecords
     : flaggedRecords.filter((record) => record.batch_id === selectedBatch);
 
+  const sortedRecords = useMemo(() => {
+    const records = [...filteredStructured];
+    if (sortBy === 'confidence_desc') {
+      return records.sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
+    }
+    if (sortBy === 'confidence_asc') {
+      return records.sort((a, b) => (a.confidence_score || 0) - (b.confidence_score || 0));
+    }
+    if (sortBy === 'severity_high') {
+      const severityWeights = { High: 3, Medium: 2, Low: 1 };
+      return records.sort((a, b) => (severityWeights[b.severity || 'Low'] || 0) - (severityWeights[a.severity || 'Low'] || 0));
+    }
+    if (sortBy === 'severity_low') {
+      const severityWeights = { High: 3, Medium: 2, Low: 1 };
+      return records.sort((a, b) => (severityWeights[a.severity || 'Low'] || 0) - (severityWeights[b.severity || 'Low'] || 0));
+    }
+    if (sortBy === 'ward_name') {
+      return records.sort((a, b) => (a.ward_name || '').localeCompare(b.ward_name || ''));
+    }
+    if (sortBy === 'category') {
+      return records.sort((a, b) => (a.complaint_category || '').localeCompare(b.complaint_category || ''));
+    }
+    return records;
+  }, [filteredStructured, sortBy]);
+
+  const handleViewOnMap = (lat, lng) => {
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+    if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+      setMapCenter([parsedLat, parsedLng]);
+      setMapZoom(16);
+      const mapElement = document.getElementById("ingestion-map-container");
+      if (mapElement) {
+        mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
+
   const parentRef = useRef();
 
   const rowVirtualizer = useVirtualizer({
-    count: filteredStructured.length,
+    count: sortedRecords.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 52,
     overscan: 10
@@ -203,7 +241,59 @@ export default function IngestedReportsTab({
         </div>
 
         <div className="lg:col-span-7 space-y-6">
-          {/* Info Card & Export */}
+          {/* Map Container */}
+          <div id="ingestion-map-container" className="glass-card p-5 rounded-2xl h-[460px] flex flex-col relative z-0">
+            <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <Activity size={16} className="text-brand-600 animate-pulse" />
+              Live Hotspots Map
+            </h3>
+            <div className="flex-1 w-full rounded-xl overflow-hidden border border-slate-200/80 bg-slate-50 shadow-inner">
+              <MapContainer 
+                center={mapCenter} 
+                zoom={mapZoom} 
+                style={{ height: '100%', width: '100%' }}
+                scrollWheelZoom={true}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                />
+                <MapRecenter center={mapCenter} zoom={mapZoom} />
+                {filteredStructured.map((record) => {
+                  if (!record.lat || !record.lng) return null;
+                  const severityColors = {
+                    High: '#dc2626',
+                    Medium: '#d97706',
+                    Low: '#059669'
+                  };
+                  const color = severityColors[record.severity] || '#2563eb';
+                  return (
+                    <CircleMarker 
+                      key={`complaint-marker-${record.id}`} 
+                      center={[record.lat, record.lng]} 
+                      radius={5.5}
+                      pathOptions={{
+                        className: 'ingested-hotspot-marker',
+                        fillColor: color,
+                        color: '#ffffff',
+                        weight: 1.5,
+                        fillOpacity: 0.95
+                      }}
+                    >
+                      <Popup>
+                        <div className="text-xs p-1 text-slate-900 font-sans">
+                          <span className="font-bold text-brand-700 text-[13px]">{record.ward_name || 'Unknown'}</span>
+                          <p className="text-[11px] text-slate-600 font-medium mt-1">{record.description}</p>
+                        </div>
+                      </Popup>
+                    </CircleMarker>
+                  );
+                })}
+              </MapContainer>
+            </div>
+          </div>
+
+          {/* Info Card */}
           <div className="glass-card p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-start gap-3 text-slate-600 font-sans">
               <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 shadow-sm shrink-0">
@@ -223,63 +313,33 @@ export default function IngestedReportsTab({
                 </div>
               </div>
             </div>
-            <button
-              onClick={downloadCSV}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 hover:border-brand-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-brand-600 font-semibold text-xs rounded-lg shadow-xs transition-all active:scale-[0.98] duration-150 cursor-pointer"
-            >
-              <Download size={14} />
-              Export Structured 311 CSV
-            </button>
-          </div>
-
-          {/* Map Container */}
-          <div className="glass-card p-5 rounded-2xl h-[460px] flex flex-col relative z-0">
-            <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-              <Activity size={16} className="text-brand-600 animate-pulse" />
-              Live Hotspots Map
-            </h3>
-            <div className="flex-1 w-full rounded-xl overflow-hidden border border-slate-200/80 bg-slate-50 shadow-inner">
-              <MapContainer 
-                center={mapCenter} 
-                zoom={mapZoom} 
-                style={{ height: '100%', width: '100%' }}
-                scrollWheelZoom={true}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                />
-                <MapRecenter center={mapCenter} zoom={mapZoom} />
-                {filteredStructured.map((record) => {
-                  if (!record.lat || !record.lng) return null;
-                  return (
-                    <Marker 
-                      key={`complaint-marker-${record.id}`} 
-                      position={[record.lat, record.lng]} 
-                      icon={createComplaintMarker(record.severity)}
-                    >
-                      <Popup>
-                        <div className="text-xs p-1 text-slate-900 font-sans">
-                          <span className="font-bold text-brand-700 text-[13px]">{record.ward_name || 'Unknown'}</span>
-                          <p className="text-[11px] text-slate-600 font-medium mt-1">{record.description}</p>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  );
-                })}
-              </MapContainer>
-            </div>
           </div>
         </div>
       </div>
 
       {/* Dataset Table Section */}
       <div className="glass-card p-5 rounded-2xl overflow-hidden">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h3 className="text-md font-bold text-slate-800 flex items-center gap-2">
             <Database size={18} className="text-brand-600" />
             Clean Structured Dataset
           </h3>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Sort:</span>
+            <CustomDropdown
+              value={sortBy}
+              onChange={setSortBy}
+              options={[
+                { value: 'confidence_desc', label: 'Confidence: High to Low' },
+                { value: 'confidence_asc', label: 'Confidence: Low to High' },
+                { value: 'severity_high', label: 'Severity: High first' },
+                { value: 'severity_low', label: 'Severity: Low first' },
+                { value: 'ward_name', label: 'Ward Name (A-Z)' },
+                { value: 'category', label: 'Category (A-Z)' }
+              ]}
+              className="w-56"
+            />
+          </div>
         </div>
         <div ref={parentRef} className="overflow-auto max-h-[520px] border border-slate-150 rounded-2xl shadow-xs scrollbar-thin">
           <table className="w-full text-left border-collapse text-xs font-sans table-fixed min-w-[800px]">
@@ -294,14 +354,14 @@ export default function IngestedReportsTab({
                 <th className="sticky top-0 bg-slate-50/95 backdrop-blur-sm z-10 border-b border-slate-200/80 py-3.5 px-6 text-right w-28">Confidence</th>
               </tr>
             </thead>
-            <tbody key={selectedBatch} className="divide-y divide-slate-100 text-slate-700 font-semibold animate-in fade-in duration-200">
+            <tbody key={`${selectedBatch}-${sortBy}`} className="divide-y divide-slate-100 text-slate-700 font-semibold animate-in fade-in duration-200">
               {paddingTop > 0 && (
                 <tr>
                   <td colSpan={7} style={{ height: `${paddingTop}px` }} />
                 </tr>
               )}
               {virtualRows.map((virtualRow) => {
-                const record = filteredStructured[virtualRow.index];
+                const record = sortedRecords[virtualRow.index];
                 return (
                   <tr 
                     key={record.id} 
@@ -323,10 +383,13 @@ export default function IngestedReportsTab({
                     </td>
                     <td className="py-3.5 px-4">
                       {record.lat ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 font-mono bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
-                          <MapPin size={10} className="text-slate-400" />
-                          {Number(record.lat).toFixed(4)}, {Number(record.lng).toFixed(4)}
-                        </span>
+                        <button
+                          onClick={() => handleViewOnMap(record.lat, record.lng)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold border border-brand-200 rounded-lg text-[10px] transition-all cursor-pointer inline-flex items-center gap-1 active:scale-[0.97]"
+                        >
+                          <MapPin size={10} className="text-brand-500" />
+                          View on map
+                        </button>
                       ) : (
                         <span className="text-[10px] text-slate-400 font-medium">No Coordinates</span>
                       )}

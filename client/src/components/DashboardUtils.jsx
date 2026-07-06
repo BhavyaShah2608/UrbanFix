@@ -50,7 +50,7 @@ export const createComplaintMarker = (severity) => {
     className: 'custom-gps-marker',
     html: `
       <div class="relative flex items-center justify-center">
-        <span class="absolute inline-flex h-6 w-6 rounded-full opacity-75 animate-ping" style="background-color: ${color};"></span>
+        <span class="absolute inline-flex h-6 w-6 rounded-full opacity-60 animate-slow-ping" style="background-color: ${color};"></span>
         <span class="relative inline-flex rounded-full h-3.5 w-3.5 border-2 border-white shadow-md" style="background-color: ${color};"></span>
       </div>
     `,
@@ -62,7 +62,9 @@ export const createComplaintMarker = (severity) => {
 export function MapRecenter({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom);
+    if (center && center[0] && center[1]) {
+      map.setView(center, zoom, { animate: true, duration: 1.0 });
+    }
   }, [center, zoom, map]);
   return null;
 }
