@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
-  CheckCircle2, AlertTriangle, Gauge, Database, MapPin, Activity
+  CheckCircle2, AlertTriangle, Gauge, Database, MapPin, Activity, Search
 } from 'lucide-react';
 import { 
   MapRecenter,
@@ -25,6 +25,9 @@ export default function IngestedReportsTab({
   const [mapZoom, setMapZoom] = useState(12);
   const [sortBy, setSortBy] = useState('confidence_desc');
   const [focusedRecordId, setFocusedRecordId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterSeverity, setFilterSeverity] = useState('all');
 
   const filteredStructured = selectedBatch === 'all'
     ? structuredRecords
@@ -38,8 +41,35 @@ export default function IngestedReportsTab({
     ? flaggedRecords
     : flaggedRecords.filter((record) => record.batch_id === selectedBatch);
 
-  const sortedRecords = useMemo(() => {
-    const records = [...filteredStructured];
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set(structuredRecords.map(r => r.complaint_category).filter(Boolean));
+    return Array.from(cats).sort();
+  }, [structuredRecords]);
+
+  const filteredAndSortedRecords = useMemo(() => {
+    let records = [...filteredStructured];
+
+    // Apply Search Term
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase();
+      records = records.filter(r => 
+        (r.complaint_id || '').toLowerCase().includes(term) ||
+        (r.ward_name || '').toLowerCase().includes(term) ||
+        (r.description || '').toLowerCase().includes(term)
+      );
+    }
+
+    // Apply Category Filter
+    if (filterCategory !== 'all') {
+      records = records.filter(r => r.complaint_category === filterCategory);
+    }
+
+    // Apply Severity Filter
+    if (filterSeverity !== 'all') {
+      records = records.filter(r => r.severity === filterSeverity);
+    }
+
+    // Apply Sorting
     if (sortBy === 'confidence_desc') {
       return records.sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
     }
@@ -61,7 +91,7 @@ export default function IngestedReportsTab({
       return records.sort((a, b) => (a.complaint_category || '').localeCompare(b.complaint_category || ''));
     }
     return records;
-  }, [filteredStructured, sortBy]);
+  }, [filteredStructured, searchTerm, filterCategory, filterSeverity, sortBy]);
 
   const handleViewOnMap = (recordId, lat, lng) => {
     const parsedLat = parseFloat(lat);
@@ -85,7 +115,7 @@ export default function IngestedReportsTab({
   const parentRef = useRef();
 
   const rowVirtualizer = useVirtualizer({
-    count: sortedRecords.length,
+    count: filteredAndSortedRecords.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 52,
     overscan: 10
@@ -366,6 +396,57 @@ export default function IngestedReportsTab({
             />
           </div>
         </div>
+
+        {/* Search & Filter Toolbar */}
+        <div className="flex flex-col md:flex-row gap-4 mb-5 items-center justify-between border-t border-slate-100 pt-4">
+          {/* Search Input */}
+          <div className="relative w-full md:w-80">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search size={14} />
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by ID, Ward, Description..."
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 focus:border-brand-300 focus:ring-1 focus:ring-brand-200/50 bg-white text-slate-700 placeholder-slate-400 text-xs rounded-xl font-semibold outline-none transition-all"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+            {/* Category Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Category:</span>
+              <CustomDropdown
+                value={filterCategory}
+                onChange={setFilterCategory}
+                options={[
+                  { value: 'all', label: 'All Categories' },
+                  ...uniqueCategories.map(cat => ({ value: cat, label: cat }))
+                ]}
+                className="w-44"
+              />
+            </div>
+
+            {/* Severity Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Severity:</span>
+              <CustomDropdown
+                value={filterSeverity}
+                onChange={setFilterSeverity}
+                options={[
+                  { value: 'all', label: 'All Severities' },
+                  { value: 'High', label: 'High' },
+                  { value: 'Medium', label: 'Medium' },
+                  { value: 'Low', label: 'Low' }
+                ]}
+                className="w-36"
+              />
+            </div>
+          </div>
+        </div>
+
         <div ref={parentRef} className="overflow-auto max-h-[520px] border border-slate-150 rounded-2xl shadow-xs scrollbar-thin">
           <table className="w-full text-left border-collapse text-xs font-sans table-fixed min-w-[800px]">
             <thead>
@@ -379,14 +460,14 @@ export default function IngestedReportsTab({
                 <th className="sticky top-0 bg-slate-50/95 backdrop-blur-sm z-10 border-b border-slate-200/80 py-3.5 px-6 text-right w-28">Confidence</th>
               </tr>
             </thead>
-            <tbody key={`${selectedBatch}-${sortBy}`} className="divide-y divide-slate-100 text-slate-700 font-semibold animate-in fade-in duration-200">
+            <tbody key={`${selectedBatch}-${sortBy}-${searchTerm}-${filterCategory}-${filterSeverity}`} className="divide-y divide-slate-100 text-slate-700 font-semibold animate-in fade-in duration-200">
               {paddingTop > 0 && (
                 <tr>
                   <td colSpan={7} style={{ height: `${paddingTop}px` }} />
                 </tr>
               )}
               {virtualRows.map((virtualRow) => {
-                const record = sortedRecords[virtualRow.index];
+                const record = filteredAndSortedRecords[virtualRow.index];
                 return (
                   <tr 
                     key={record.id} 
