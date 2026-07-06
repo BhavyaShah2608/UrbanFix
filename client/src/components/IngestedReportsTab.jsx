@@ -431,7 +431,7 @@ export default function IngestedReportsTab({
 
             {/* Popover Dropdown Card */}
             {showFilterDropdown && (
-              <div className="absolute right-0 mt-11 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-5 z-20 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+              <div className="absolute right-0 mt-11 w-[240px] bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                   <span className="text-xs font-bold text-slate-800">Dataset Filters</span>
                   {(filterCategory !== 'all' || filterSeverity !== 'all' || filterWard !== 'all') && (

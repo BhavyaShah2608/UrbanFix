@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Filter, Activity, Database } from 'lucide-react';
+import { Filter, Activity, Database, Download } from 'lucide-react';
 import OverviewTab from './OverviewTab';
 import PredictiveTab from './PredictiveTab';
 import IotTelemetryTab from './IotTelemetryTab';
@@ -145,6 +145,16 @@ export default function Dashboard({
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          {dashboardView === 'ingested' && (
+            <button
+              onClick={downloadCSV}
+              className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:border-brand-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-brand-600 font-semibold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] duration-150 cursor-pointer select-none"
+            >
+              <Download size={14} />
+              Export Structured 311 CSV
+            </button>
+          )}
+
           <CustomDropdown
             value={dashboardView}
             onChange={setDashboardView}
