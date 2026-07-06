@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
-  CheckCircle2, AlertTriangle, Gauge, Database, MapPin, Activity, Search
+  CheckCircle2, AlertTriangle, Gauge, Database, MapPin, Activity, Search, SlidersHorizontal
 } from 'lucide-react';
 import { 
   MapRecenter,
@@ -28,6 +28,7 @@ export default function IngestedReportsTab({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterSeverity, setFilterSeverity] = useState('all');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const filteredStructured = selectedBatch === 'all'
     ? structuredRecords
@@ -398,7 +399,7 @@ export default function IngestedReportsTab({
         </div>
 
         {/* Search & Filter Toolbar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-5 items-center justify-between border-t border-slate-100 pt-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-5 items-center justify-between border-t border-slate-100 pt-4 relative">
           {/* Search Input */}
           <div className="relative w-full md:w-80">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -413,37 +414,78 @@ export default function IngestedReportsTab({
             />
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-            {/* Category Filter */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Category:</span>
-              <CustomDropdown
-                value={filterCategory}
-                onChange={setFilterCategory}
-                options={[
-                  { value: 'all', label: 'All Categories' },
-                  ...uniqueCategories.map(cat => ({ value: cat, label: cat }))
-                ]}
-                className="w-44"
-              />
-            </div>
+          {/* Filters Button & Popover */}
+          <div className="relative w-full md:w-auto flex justify-end">
+            <button
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:border-brand-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-brand-600 font-semibold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] duration-150 cursor-pointer select-none"
+            >
+              <SlidersHorizontal size={14} className={showFilterDropdown ? "text-brand-600" : "text-slate-500"} />
+              Filters
+              {(filterCategory !== 'all' || filterSeverity !== 'all') && (
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 text-[10px] text-white px-1 font-bold">
+                  {(filterCategory !== 'all' ? 1 : 0) + (filterSeverity !== 'all' ? 1 : 0)}
+                </span>
+              )}
+            </button>
 
-            {/* Severity Filter */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Severity:</span>
-              <CustomDropdown
-                value={filterSeverity}
-                onChange={setFilterSeverity}
-                options={[
-                  { value: 'all', label: 'All Severities' },
-                  { value: 'High', label: 'High' },
-                  { value: 'Medium', label: 'Medium' },
-                  { value: 'Low', label: 'Low' }
-                ]}
-                className="w-36"
+            {/* Click-outside overlay backdrop */}
+            {showFilterDropdown && (
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setShowFilterDropdown(false)} 
               />
-            </div>
+            )}
+
+            {/* Popover Dropdown Card */}
+            {showFilterDropdown && (
+              <div className="absolute right-0 mt-11 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-5 z-20 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <span className="text-xs font-bold text-slate-800">Dataset Filters</span>
+                  {(filterCategory !== 'all' || filterSeverity !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setFilterCategory('all');
+                        setFilterSeverity('all');
+                      }}
+                      className="text-[10px] font-extrabold text-brand-600 hover:text-brand-700 cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Filter */}
+                <div className="flex flex-col gap-1.5 text-left">
+                  <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Category</span>
+                  <CustomDropdown
+                    value={filterCategory}
+                    onChange={setFilterCategory}
+                    options={[
+                      { value: 'all', label: 'All Categories' },
+                      ...uniqueCategories.map(cat => ({ value: cat, label: cat }))
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Severity Filter */}
+                <div className="flex flex-col gap-1.5 text-left">
+                  <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Severity</span>
+                  <CustomDropdown
+                    value={filterSeverity}
+                    onChange={setFilterSeverity}
+                    options={[
+                      { value: 'all', label: 'All Severities' },
+                      { value: 'High', label: 'High' },
+                      { value: 'Medium', label: 'Medium' },
+                      { value: 'Low', label: 'Low' }
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
