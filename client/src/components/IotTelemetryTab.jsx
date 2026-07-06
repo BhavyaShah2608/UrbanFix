@@ -1,12 +1,12 @@
 /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 import { useState, useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip,
   BarChart, Bar, XAxis, YAxis
 } from 'recharts';
 import {
-  RadioTower, CheckCircle2, AlertTriangle, Droplets, Download, X, ShieldCheck as ShieldCheckIcon, TrendingUp, Loader2
+  RadioTower, CheckCircle2, AlertTriangle, Droplets, Download, X, ShieldCheck as ShieldCheckIcon, TrendingUp, Loader2, ChevronDown, MapPin
 } from 'lucide-react';
 import { 
   stateStyles, 
@@ -14,6 +14,221 @@ import {
   formatReadingTime 
 } from './DashboardUtils';
 import WardRelationAssistant from './WardRelationAssistant';
+
+function TelemetryRow({ r, stateStyles, formatReadingTime, onFocusOnSensor }) {
+  const [isTier2Open, setIsTier2Open] = useState(false);
+  const [isTier3Open, setIsTier3Open] = useState(false);
+
+  const toggleTier2 = () => {
+    const nextState = !isTier2Open;
+    setIsTier2Open(nextState);
+    if (!nextState) {
+      setIsTier3Open(false); // Collapse Tier 3 when Tier 2 collapses
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleTier2();
+    }
+  };
+
+  const toggleTier3 = (e) => {
+    e.stopPropagation(); // Stop event bubbling to the row
+    setIsTier3Open(!isTier3Open);
+  };
+
+  const handleViewOnMap = (e) => {
+    e.stopPropagation(); // Stop bubbling
+    onFocusOnSensor(r.geo_latitude, r.geo_longitude);
+  };
+
+  return (
+    <>
+      {/* Tier 1 Row */}
+      <tr 
+        onClick={toggleTier2} 
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        aria-expanded={isTier2Open}
+        className="hover:bg-slate-50/60 cursor-pointer select-none transition-colors border-b border-slate-100 outline-none focus:bg-slate-50/85"
+      >
+        {/* Area */}
+        <td className="py-3 px-4 font-bold text-slate-800">
+          {r.ward_name}
+        </td>
+
+        {/* Sewage State */}
+        <td className="py-3 px-4">
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${stateStyles[r.state_of_sewage]?.badge}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${
+              r.state_of_sewage === 'critical' ? 'bg-red-500 animate-pulse' : r.state_of_sewage === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}></span>
+            {stateStyles[r.state_of_sewage]?.label || r.state_of_sewage}
+          </span>
+        </td>
+
+        {/* Maintenance Action */}
+        <td className="py-3 px-4 text-slate-650 font-medium truncate max-w-[280px]" title={r.maintenance_required}>
+          {r.maintenance_required || "None"}
+        </td>
+
+        {/* Telemetry Date */}
+        <td className="py-3 px-4 text-slate-500 font-medium">
+          {formatReadingTime(r.date)}
+        </td>
+
+        {/* Chevron Icon */}
+        <td className="py-3 px-4 text-right">
+          <button 
+            type="button" 
+            aria-label="Toggle details"
+            className="p-1 rounded hover:bg-slate-100 text-slate-450 transition-colors focus:ring-2 focus:ring-brand-500/20"
+          >
+            <ChevronDown 
+              size={16} 
+              className={`transition-transform duration-150 ${isTier2Open ? 'rotate-180' : ''}`} 
+            />
+          </button>
+        </td>
+      </tr>
+
+      {/* Tier 2 & 3 Expanded Details Row */}
+      <tr className="bg-slate-50/15">
+        <td colSpan={5} className="p-0 border-none">
+          <div className={`grid transition-all duration-200 ease-out ${isTier2Open ? 'grid-rows-[1fr] opacity-100 border-b border-slate-150' : 'grid-rows-[0fr] opacity-0 overflow-hidden'}`}>
+            <div className="overflow-hidden">
+              <div className="px-6 py-5 space-y-4 font-sans text-xs">
+                
+                {/* Tier 2 Grid (compact, label above value, sentence case labels, bold values) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                  {/* Nitrogen level */}
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Nitrogen level</span>
+                    <span className="text-xs font-bold text-slate-800">{r['nitrogen mg/L']} <span className="text-[10px] text-slate-400 font-normal">mg/L</span></span>
+                  </div>
+
+                  {/* Phosphorus level */}
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Phosphorus level</span>
+                    <span className="text-xs font-bold text-slate-800">{r['phosphorous mg/L']} <span className="text-[10px] text-slate-400 font-normal">mg/L</span></span>
+                  </div>
+
+                  {/* State details */}
+                  <div className="sm:col-span-2">
+                    <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">State details</span>
+                    <span className="text-xs font-semibold text-slate-700 leading-relaxed">{r.state_reason || "Optimal Operations"}</span>
+                  </div>
+
+                  {/* Blockage status */}
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Blockage status</span>
+                    {r.is_blocked === 'Y' ? (
+                      <span className="inline-flex items-center text-red-750 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase">Blocked</span>
+                    ) : (
+                      <span className="inline-flex items-center text-emerald-750 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase">Clear</span>
+                    )}
+                  </div>
+
+                  {/* Groundwater level */}
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Groundwater level</span>
+                    <span className="text-xs font-bold text-slate-800">{r.groundwater_level_m} <span className="text-[10px] text-slate-400 font-normal">m</span></span>
+                  </div>
+
+                  {/* Environment */}
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Environment type</span>
+                    <span className="text-xs font-semibold text-slate-755">{r.environmental_conditions || "N/A"}</span>
+                  </div>
+
+                  {/* Connections */}
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Connections</span>
+                    <span className="text-xs font-bold text-slate-800">{r.connections_count} links</span>
+                  </div>
+                </div>
+
+                {/* Tier 3 nested specs */}
+                <div className={`grid transition-all duration-200 ease-out ${isTier3Open ? 'grid-rows-[1fr] opacity-100 border-t border-slate-200/80 pt-4 mt-4' : 'grid-rows-[0fr] opacity-0 overflow-hidden'}`}>
+                  <div className="overflow-hidden">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                      {/* Diameter */}
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Pipe diameter</span>
+                        <span className="text-xs font-bold text-slate-800">{r.pipe_diameter_mm} <span className="text-[10px] text-slate-400 font-normal">mm</span></span>
+                      </div>
+
+                      {/* Install Method */}
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Installation method</span>
+                        <span className="text-xs font-semibold text-slate-755">{r.installation_method || "N/A"}</span>
+                      </div>
+
+                      {/* Pipe Age */}
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Pipe age</span>
+                        <span className="text-xs font-bold text-slate-800">{r.pipe_age_years} <span className="text-[10px] text-slate-400 font-normal">yrs</span></span>
+                      </div>
+
+                      {/* Pipe Length */}
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Pipe length</span>
+                        <span className="text-xs font-bold text-slate-800">{r.pipe_length_m} <span className="text-[10px] text-slate-400 font-normal">m</span></span>
+                      </div>
+
+                      {/* Pipe Depth */}
+                      <div>
+                        <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Pipe depth</span>
+                        <span className="text-xs font-bold text-slate-800">{r.pipe_depth_m} <span className="text-[10px] text-slate-400 font-normal">m</span></span>
+                      </div>
+
+                      {/* View on Map instead of Lat/Lng values */}
+                      <div className="sm:col-span-2">
+                        <span className="text-[10px] font-semibold text-slate-400 block mb-0.5">Sensor location</span>
+                        <button
+                          type="button"
+                          onClick={handleViewOnMap}
+                          className="px-2.5 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold border border-brand-200 rounded-lg text-[10px] transition-all cursor-pointer inline-flex items-center gap-1 active:scale-[0.97]"
+                        >
+                          <MapPin size={10} />
+                          View on map
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tier 3 Toggle Button */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={toggleTier3}
+                    className="text-[11px] font-bold text-brand-650 hover:text-brand-800 hover:underline transition-all cursor-pointer select-none outline-none focus:underline"
+                  >
+                    {isTier3Open ? 'Hide infrastructure specs' : 'Show infrastructure specs'}
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </>
+  );
+}
+
+function MapRefocusController({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center, zoom, { animate: true, duration: 1 });
+    }
+  }, [center, zoom, map]);
+  return null;
+}
 
 export default function IotTelemetryTab({
   iotSewerReadings = [],
@@ -32,6 +247,15 @@ export default function IotTelemetryTab({
   const [mapCenter, setMapCenter] = useState([23.0225, 72.5714]);
   const [mapZoom, setMapZoom] = useState(12);
   const [mapTilesLoaded, setMapTilesLoaded] = useState(false);
+
+  const focusOnSensor = (lat, lng) => {
+    setMapCenter([lat, lng]);
+    setMapZoom(16);
+    const mapElement = document.getElementById("sensor-map-container");
+    if (mapElement) {
+      mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   const hasIotReadings = iotSewerReadings.length > 0;
 
@@ -230,7 +454,7 @@ export default function IotTelemetryTab({
         </div>
 
         {/* Map Container */}
-        <div className="glass-card p-5 rounded-2xl h-[460px] flex flex-col relative z-0">
+        <div id="sensor-map-container" className="glass-card p-5 rounded-2xl h-[460px] flex flex-col relative z-0">
           <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
             <RadioTower size={16} className="text-brand-600 animate-pulse" />
             Live IoT Sensor Map
@@ -249,6 +473,7 @@ export default function IotTelemetryTab({
               style={{ height: '100%', width: '100%' }}
               scrollWheelZoom={true}
             >
+              <MapRefocusController center={mapCenter} zoom={mapZoom} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -301,114 +526,25 @@ export default function IotTelemetryTab({
           </div>
         </div>
         <div className="overflow-x-auto border border-slate-150 rounded-2xl shadow-xs scrollbar-thin">
-          <table className="w-full text-left border-collapse text-xs font-sans min-w-[2000px]">
+          <table className="w-full text-left border-collapse text-xs font-sans">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-150 text-slate-400 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10 shadow-xs">
-                <th className="py-3 px-4 bg-slate-50/90 min-w-[140px]">Area</th>
-                <th className="py-3 px-4 bg-slate-50/90 min-w-[170px]">Telemetry Date</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[120px]">Nitrogen Level</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[140px]">Phosphorus Level</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-center min-w-[130px]">Sewage State</th>
-                <th className="py-3 px-4 bg-slate-50/90 min-w-[220px]">State Details</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[100px]">Diameter</th>
-                <th className="py-3 px-4 bg-slate-50/90 min-w-[150px]">Install Method</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[100px]">Pipe Age</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Pipe Length</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Pipe Depth</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Connections</th>
-                <th className="py-3 px-4 bg-slate-50/90 min-w-[140px]">Environment</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">GW Level</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-center min-w-[130px]">Blockage Status</th>
-                <th className="py-3 px-4 bg-slate-50/90 min-w-[220px]">Maintenance Action</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Latitude</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Longitude</th>
+                <th className="py-3 px-4 bg-slate-50/90">Area</th>
+                <th className="py-3 px-4 bg-slate-50/90">Sewage State</th>
+                <th className="py-3 px-4 bg-slate-50/90">Maintenance Action</th>
+                <th className="py-3 px-4 bg-slate-50/90">Telemetry Date</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700 font-semibold">
               {sortedTelemetryReadings.map((r) => (
-                <tr key={r.device_id} className="hover:bg-slate-50/40 transition-colors">
-                  {/* Area */}
-                  <td className="py-3.5 px-4 font-bold text-slate-800">
-                    {r.ward_name}
-                  </td>
-                  {/* Telemetry Date */}
-                  <td className="py-3.5 px-4 text-slate-500 font-medium">
-                    {formatReadingTime(r.date)}
-                  </td>
-                  {/* Nitrogen Level */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-850 font-bold">
-                    {r['nitrogen mg/L']} <span className="text-[10px] text-slate-400 font-normal">mg/L</span>
-                  </td>
-                  {/* Phosphorus Level */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-850 font-bold">
-                    {r['phosphorous mg/L']} <span className="text-[10px] text-slate-400 font-normal">mg/L</span>
-                  </td>
-                  {/* Sewage State */}
-                  <td className="py-3.5 px-4 text-center">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${stateStyles[r.state_of_sewage]?.badge}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        r.state_of_sewage === 'critical' ? 'bg-red-500 animate-pulse' : r.state_of_sewage === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
-                      }`}></span>
-                      {stateStyles[r.state_of_sewage]?.label || r.state_of_sewage}
-                    </span>
-                  </td>
-                  {/* State Details */}
-                  <td className="py-3.5 px-4 text-slate-600 font-medium max-w-[220px] truncate" title={r.state_reason}>
-                    {r.state_reason || "Optimal Operations"}
-                  </td>
-                  {/* Diameter */}
-                  <td className="py-3.5 px-4 text-right font-bold text-slate-800">
-                    {r.pipe_diameter_mm} <span className="text-[10px] text-slate-400 font-normal">mm</span>
-                  </td>
-                  {/* Install Method */}
-                  <td className="py-3.5 px-4 text-slate-600 font-medium">
-                    {r.installation_method || "N/A"}
-                  </td>
-                  {/* Pipe Age */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
-                    {r.pipe_age_years} <span className="text-[10px] text-slate-400 font-normal">yrs</span>
-                  </td>
-                  {/* Pipe Length */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
-                    {r.pipe_length_m} <span className="text-[10px] text-slate-400 font-normal">m</span>
-                  </td>
-                  {/* Pipe Depth */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
-                    {r.pipe_depth_m} <span className="text-[10px] text-slate-400 font-normal">m</span>
-                  </td>
-                  {/* Connections */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
-                    {r.connections_count}
-                  </td>
-                  {/* Environment */}
-                  <td className="py-3.5 px-4 text-slate-600 font-medium">
-                    {r.environmental_conditions || "N/A"}
-                  </td>
-                  {/* GW Level */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
-                    {r.groundwater_level_m} <span className="text-[10px] text-slate-400 font-normal">m</span>
-                  </td>
-                  {/* Blockage Status */}
-                  <td className="py-3.5 px-4 text-center">
-                    {r.is_blocked === 'Y' ? (
-                      <span className="text-red-750 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase">Blocked</span>
-                    ) : (
-                      <span className="text-emerald-750 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase">Clear</span>
-                    )}
-                  </td>
-                  {/* Maintenance Action */}
-                  <td className="py-3.5 px-4 text-slate-650 font-medium max-w-[220px] truncate" title={r.maintenance_required}>
-                    {r.maintenance_required || "None"}
-                  </td>
-                  {/* Latitude */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-500 font-medium">
-                    {r.geo_latitude}
-                  </td>
-                  {/* Longitude */}
-                  <td className="py-3.5 px-4 text-right font-mono text-slate-500 font-medium">
-                    {r.geo_longitude}
-                  </td>
-                </tr>
+                <TelemetryRow
+                  key={r.device_id}
+                  r={r}
+                  stateStyles={stateStyles}
+                  formatReadingTime={formatReadingTime}
+                  onFocusOnSensor={focusOnSensor}
+                />
               ))}
             </tbody>
           </table>
