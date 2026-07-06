@@ -274,11 +274,11 @@ export default function IngestedReportsTab({
             {barChartData.length > 0 ? (
               <div className="h-48 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barChartData} margin={{ left: -20, right: 10, bottom: 0 }}>
-                    <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={10} fontWeight="bold" stroke="#64748b" />
-                    <YAxis tickLine={false} axisLine={false} fontSize={10} fontWeight="bold" stroke="#64748b" />
+                  <BarChart data={barChartData} layout="vertical" margin={{ left: -10, right: 10, bottom: 5, top: 5 }}>
+                    <XAxis type="number" tickLine={false} axisLine={false} fontSize={10} fontWeight="bold" stroke="#64748b" />
+                    <YAxis dataKey="name" type="category" width={110} tickLine={false} axisLine={false} fontSize={10} fontWeight="bold" stroke="#64748b" />
                     <RechartsTooltip contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                    <Bar dataKey="count" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={28} isAnimationActive={true} animationDuration={600} animationEasing="ease-out" />
+                    <Bar dataKey="count" fill="#2563eb" radius={[0, 6, 6, 0]} barSize={16} isAnimationActive={true} animationDuration={600} animationEasing="ease-out" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
