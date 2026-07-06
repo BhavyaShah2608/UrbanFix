@@ -23,9 +23,9 @@ export default function IotTelemetryTab({
   const [isTelemetrySidebarOpen, setIsTelemetrySidebarOpen] = useState(false);
   const sortedTelemetryReadings = useMemo(() => {
     return [...iotSewerReadings].sort((a, b) => {
-      const nameA = a.ward_name || '';
-      const nameB = b.ward_name || '';
-      return nameA.localeCompare(nameB);
+      const dateA = new Date(a.date).getTime() || 0;
+      const dateB = new Date(b.date).getTime() || 0;
+      return dateB - dateA;
     });
   }, [iotSewerReadings]);
   const [selectedRiskZone, setSelectedRiskZone] = useState(""); // "normal", "warning", "critical"
@@ -300,35 +300,50 @@ export default function IotTelemetryTab({
             </span>
           </div>
         </div>
-        <div className="overflow-x-auto overflow-y-auto max-h-[450px] border border-slate-150 rounded-2xl shadow-xs scrollbar-thin">
-          <table className="w-full text-left border-collapse text-xs font-sans">
+        <div className="overflow-x-auto border border-slate-150 rounded-2xl shadow-xs scrollbar-thin">
+          <table className="w-full text-left border-collapse text-xs font-sans min-w-[2000px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-150 text-slate-400 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10 shadow-xs">
-                <th className="py-3 px-4 bg-slate-50/90">Area</th>
-                <th className="py-3 px-4 bg-slate-50/90">Telemetry Date</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right">Nitrogen Level</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right">Phosphorus Level</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-center">Sewage State</th>
-                <th className="py-3 px-4 bg-slate-50/90">State Details</th>
-                <th className="py-3 px-4 bg-slate-50/90 text-right">Diameter</th>
-                <th className="py-3 px-4 bg-slate-50/90">Install Method</th>
+                <th className="py-3 px-4 bg-slate-50/90 min-w-[140px]">Area</th>
+                <th className="py-3 px-4 bg-slate-50/90 min-w-[170px]">Telemetry Date</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[120px]">Nitrogen Level</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[140px]">Phosphorus Level</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-center min-w-[130px]">Sewage State</th>
+                <th className="py-3 px-4 bg-slate-50/90 min-w-[220px]">State Details</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[100px]">Diameter</th>
+                <th className="py-3 px-4 bg-slate-50/90 min-w-[150px]">Install Method</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[100px]">Pipe Age</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Pipe Length</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Pipe Depth</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Connections</th>
+                <th className="py-3 px-4 bg-slate-50/90 min-w-[140px]">Environment</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">GW Level</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-center min-w-[130px]">Blockage Status</th>
+                <th className="py-3 px-4 bg-slate-50/90 min-w-[220px]">Maintenance Action</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Latitude</th>
+                <th className="py-3 px-4 bg-slate-50/90 text-right min-w-[110px]">Longitude</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700 font-semibold">
               {sortedTelemetryReadings.map((r) => (
                 <tr key={r.device_id} className="hover:bg-slate-50/40 transition-colors">
+                  {/* Area */}
                   <td className="py-3.5 px-4 font-bold text-slate-800">
                     {r.ward_name}
                   </td>
+                  {/* Telemetry Date */}
                   <td className="py-3.5 px-4 text-slate-500 font-medium">
                     {formatReadingTime(r.date)}
                   </td>
+                  {/* Nitrogen Level */}
                   <td className="py-3.5 px-4 text-right font-mono text-slate-850 font-bold">
                     {r['nitrogen mg/L']} <span className="text-[10px] text-slate-400 font-normal">mg/L</span>
                   </td>
+                  {/* Phosphorus Level */}
                   <td className="py-3.5 px-4 text-right font-mono text-slate-850 font-bold">
                     {r['phosphorous mg/L']} <span className="text-[10px] text-slate-400 font-normal">mg/L</span>
                   </td>
+                  {/* Sewage State */}
                   <td className="py-3.5 px-4 text-center">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${stateStyles[r.state_of_sewage]?.badge}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${
@@ -337,14 +352,61 @@ export default function IotTelemetryTab({
                       {stateStyles[r.state_of_sewage]?.label || r.state_of_sewage}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-600 font-medium max-w-[200px] truncate" title={r.state_reason}>
+                  {/* State Details */}
+                  <td className="py-3.5 px-4 text-slate-600 font-medium max-w-[220px] truncate" title={r.state_reason}>
                     {r.state_reason || "Optimal Operations"}
                   </td>
+                  {/* Diameter */}
                   <td className="py-3.5 px-4 text-right font-bold text-slate-800">
                     {r.pipe_diameter_mm} <span className="text-[10px] text-slate-400 font-normal">mm</span>
                   </td>
+                  {/* Install Method */}
                   <td className="py-3.5 px-4 text-slate-600 font-medium">
                     {r.installation_method || "N/A"}
+                  </td>
+                  {/* Pipe Age */}
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
+                    {r.pipe_age_years} <span className="text-[10px] text-slate-400 font-normal">yrs</span>
+                  </td>
+                  {/* Pipe Length */}
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
+                    {r.pipe_length_m} <span className="text-[10px] text-slate-400 font-normal">m</span>
+                  </td>
+                  {/* Pipe Depth */}
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
+                    {r.pipe_depth_m} <span className="text-[10px] text-slate-400 font-normal">m</span>
+                  </td>
+                  {/* Connections */}
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
+                    {r.connections_count}
+                  </td>
+                  {/* Environment */}
+                  <td className="py-3.5 px-4 text-slate-600 font-medium">
+                    {r.environmental_conditions || "N/A"}
+                  </td>
+                  {/* GW Level */}
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-800">
+                    {r.groundwater_level_m} <span className="text-[10px] text-slate-400 font-normal">m</span>
+                  </td>
+                  {/* Blockage Status */}
+                  <td className="py-3.5 px-4 text-center">
+                    {r.is_blocked === 'Y' ? (
+                      <span className="text-red-750 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase">Blocked</span>
+                    ) : (
+                      <span className="text-emerald-750 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase">Clear</span>
+                    )}
+                  </td>
+                  {/* Maintenance Action */}
+                  <td className="py-3.5 px-4 text-slate-650 font-medium max-w-[220px] truncate" title={r.maintenance_required}>
+                    {r.maintenance_required || "None"}
+                  </td>
+                  {/* Latitude */}
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-500 font-medium">
+                    {r.geo_latitude}
+                  </td>
+                  {/* Longitude */}
+                  <td className="py-3.5 px-4 text-right font-mono text-slate-500 font-medium">
+                    {r.geo_longitude}
                   </td>
                 </tr>
               ))}
