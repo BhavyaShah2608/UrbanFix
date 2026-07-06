@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { 
   ShieldCheck, CheckCircle, 
-  MapPin, Phone, Info, Edit3, Trash2, Loader2, X
+  MapPin, Phone, Info, Edit3, Trash2, Loader2, X, Search, SlidersHorizontal
 } from 'lucide-react';
 import { CustomDropdown } from './DashboardUtils';
 
@@ -53,6 +53,11 @@ export default function Review({
   const [editingRecordId, setEditingRecordId] = useState(null);
   const [submittingRecordId, setSubmittingRecordId] = useState(null);
   const [sortKey, setSortKey] = useState('confidence-asc');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterSeverity, setFilterSeverity] = useState('all');
+  const [filterWard, setFilterWard] = useState('all');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const parentRef = useRef(null);
 
   // Local records state for optimistic updates
@@ -110,26 +115,63 @@ export default function Review({
     ? localFlagged.filter(r => r.status === 'pending')
     : localQuarantine.filter(r => r.status === 'pending');
 
-  const sortedRecords = useMemo(() => {
-    const sorted = [...records];
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set(records.map(r => r.partial_clean?.complaint_category).filter(Boolean));
+    return Array.from(cats).sort();
+  }, [records]);
+
+  const uniqueWards = useMemo(() => {
+    const wrds = new Set(records.map(r => r.partial_clean?.ward_name).filter(Boolean));
+    return Array.from(wrds).sort();
+  }, [records]);
+
+  const filteredAndSortedRecords = useMemo(() => {
+    let filtered = [...records];
+
+    // Apply Search Term
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(r => 
+        (r.id || '').toLowerCase().includes(term) ||
+        (r.partial_clean?.ward_name || '').toLowerCase().includes(term) ||
+        (r.partial_clean?.description || '').toLowerCase().includes(term) ||
+        (r.raw_data?.["Complaint Details"] || '').toLowerCase().includes(term)
+      );
+    }
+
+    // Apply Category Filter
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(r => r.partial_clean?.complaint_category === filterCategory);
+    }
+
+    // Apply Ward Filter
+    if (filterWard !== 'all') {
+      filtered = filtered.filter(r => r.partial_clean?.ward_name === filterWard);
+    }
+
+    // Apply Severity Filter
+    if (filterSeverity !== 'all') {
+      filtered = filtered.filter(r => r.partial_clean?.severity === filterSeverity);
+    }
+
+    // Apply Sorting
     const priorityRank = { 'High': 3, 'Medium': 2, 'Low': 1 };
-    
     switch (sortKey) {
       case 'confidence-asc':
-        sorted.sort((a, b) => (a.confidence_score || 0) - (b.confidence_score || 0));
+        filtered.sort((a, b) => (a.confidence_score || 0) - (a.confidence_score || 0));
         break;
       case 'confidence-desc':
-        sorted.sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
+        filtered.sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
         break;
       case 'priority':
-        sorted.sort((a, b) => {
+        filtered.sort((a, b) => {
           const rankA = priorityRank[a.partial_clean?.severity] || 2;
           const rankB = priorityRank[b.partial_clean?.severity] || 2;
           return rankB - rankA;
         });
         break;
       case 'flagType':
-        sorted.sort((a, b) => {
+        filtered.sort((a, b) => {
           const flagsA = a.flags || a.partial_clean?.flags || [];
           const flagsB = b.flags || b.partial_clean?.flags || [];
           const flagA = flagsA[0] || '';
@@ -138,7 +180,7 @@ export default function Review({
         });
         break;
       case 'ward':
-        sorted.sort((a, b) => {
+        filtered.sort((a, b) => {
           const wardA = a.partial_clean?.ward_name || '';
           const wardB = b.partial_clean?.ward_name || '';
           return wardA.localeCompare(wardB);
@@ -148,12 +190,12 @@ export default function Review({
       default:
         break;
     }
-    return sorted;
-  }, [records, sortKey]);
+    return filtered;
+  }, [records, searchTerm, filterCategory, filterWard, filterSeverity, sortKey]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
-    count: sortedRecords.length,
+    count: filteredAndSortedRecords.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 380,
     overscan: 4
@@ -169,16 +211,21 @@ export default function Review({
     }
     rowVirtualizer.scrollToOffset(0);
     setSelectedRecordIds(new Set());
+    setSearchTerm('');
+    setFilterCategory('all');
+    setFilterSeverity('all');
+    setFilterWard('all');
+    setShowFilterDropdown(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSubTab, sortKey]);
 
-  const isAllSelected = sortedRecords.length > 0 && selectedRecordIds.size === sortedRecords.length;
+  const isAllSelected = filteredAndSortedRecords.length > 0 && selectedRecordIds.size === filteredAndSortedRecords.length;
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedRecordIds(new Set());
     } else {
-      setSelectedRecordIds(new Set(sortedRecords.map(r => r.id)));
+      setSelectedRecordIds(new Set(filteredAndSortedRecords.map(r => r.id)));
     }
   };
 
@@ -353,7 +400,7 @@ export default function Review({
 
         {/* Bulk select check & Sort Controls */}
         <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
-          {sortedRecords.length > 0 && (
+          {filteredAndSortedRecords.length > 0 && (
             <label className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-500 cursor-pointer hover:border-slate-300 transition-colors select-none">
               <input
                 type="checkbox"
@@ -361,7 +408,7 @@ export default function Review({
                 onChange={toggleSelectAll}
                 className="h-4 w-4 rounded border-slate-350 text-brand-600 focus:ring-brand-500 cursor-pointer"
               />
-              Select All ({sortedRecords.length})
+              Select All ({filteredAndSortedRecords.length})
             </label>
           )}
 
@@ -377,18 +424,125 @@ export default function Review({
         </div>
       </div>
 
+      {/* Search & Filter Toolbar */}
+      <div className="flex flex-col md:flex-row gap-4 mb-5 items-center justify-between border-b border-slate-100 pb-4 relative z-30 px-1 font-sans">
+        {/* Search Input */}
+        <div className="relative w-full md:w-80">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Search size={14} />
+          </span>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by ID, Ward, Description..."
+            className="w-full pl-9 pr-4 py-2 border border-slate-200 focus:border-brand-300 focus:ring-1 focus:ring-brand-200/50 bg-white text-slate-700 placeholder-slate-400 text-xs rounded-xl font-semibold outline-none transition-all"
+          />
+        </div>
+
+        {/* Filters Button & Popover */}
+        <div className="relative w-full md:w-auto flex justify-end">
+          <button
+            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+            className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:border-brand-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-brand-600 font-semibold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98] duration-150 cursor-pointer select-none"
+          >
+            <SlidersHorizontal size={14} className={showFilterDropdown ? "text-brand-600" : "text-slate-500"} />
+            Filters
+            {(filterCategory !== 'all' || filterSeverity !== 'all' || filterWard !== 'all') && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 text-[10px] text-white px-1 font-bold">
+                {(filterCategory !== 'all' ? 1 : 0) + (filterSeverity !== 'all' ? 1 : 0) + (filterWard !== 'all' ? 1 : 0)}
+              </span>
+            )}
+          </button>
+
+          {/* Click-outside overlay backdrop */}
+          {showFilterDropdown && (
+            <div 
+              className="fixed inset-0 z-10" 
+              onClick={() => setShowFilterDropdown(false)} 
+            />
+          )}
+
+          {/* Popover Dropdown Card */}
+          {showFilterDropdown && (
+            <div className="absolute right-0 mt-11 w-[240px] bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150 font-sans font-semibold">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                <span className="text-xs font-bold text-slate-800">Review Filters</span>
+                {(filterCategory !== 'all' || filterSeverity !== 'all' || filterWard !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setFilterCategory('all');
+                      setFilterSeverity('all');
+                      setFilterWard('all');
+                    }}
+                    className="text-[10px] font-extrabold text-brand-600 hover:text-brand-700 cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* Ward Filter */}
+              <div className="flex flex-col gap-1.5 text-left">
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Ward</span>
+                <CustomDropdown
+                  value={filterWard}
+                  onChange={setFilterWard}
+                  options={[
+                    { value: 'all', label: 'All Wards' },
+                    ...uniqueWards.map(ward => ({ value: ward, label: ward }))
+                  ]}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div className="flex flex-col gap-1.5 text-left">
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Category</span>
+                <CustomDropdown
+                  value={filterCategory}
+                  onChange={setFilterCategory}
+                  options={[
+                    { value: 'all', label: 'All Categories' },
+                    ...uniqueCategories.map(cat => ({ value: cat, label: cat }))
+                  ]}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Severity Filter */}
+              <div className="flex flex-col gap-1.5 text-left">
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Severity</span>
+                <CustomDropdown
+                  value={filterSeverity}
+                  onChange={setFilterSeverity}
+                  options={[
+                    { value: 'all', label: 'All Severities' },
+                    { value: 'High', label: 'High' },
+                    { value: 'Medium', label: 'Medium' },
+                    { value: 'Low', label: 'Low' }
+                  ]}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Main Review queue listing */}
       <div ref={parentRef} className="max-h-[72vh] overflow-auto px-1">
-        {sortedRecords.length > 0 ? (
-          <div
-            style={{
-              height: `${totalSize}px`,
-              width: '100%',
-              position: 'relative'
-            }}
-          >
-            {virtualRows.map((virtualRow) => {
-              const rec = sortedRecords[virtualRow.index];
+        {records.length > 0 ? (
+          filteredAndSortedRecords.length > 0 ? (
+            <div
+              style={{
+                height: `${totalSize}px`,
+                width: '100%',
+                position: 'relative'
+              }}
+            >
+              {virtualRows.map((virtualRow) => {
+                const rec = filteredAndSortedRecords[virtualRow.index];
             const isEditing = editingRecordId === rec.id;
             const flags = rec.flags || (rec.partial_clean?.flags) || [];
             const confidence = rec.confidence_score || 0.0;
@@ -698,6 +852,30 @@ export default function Review({
           );
         })}
       </div>
+          ) : (
+            <div className="py-16 text-center text-slate-400 font-medium font-sans bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center space-y-4">
+              <Search size={28} className="text-slate-350 stroke-[1.5]" />
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 tracking-tight">No Matching Records</h4>
+                <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto font-medium">
+                  Try adjusting your search queries or category and severity filter dropdowns.
+                </p>
+                {(searchTerm || filterCategory !== 'all' || filterSeverity !== 'all' || filterWard !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilterCategory('all');
+                      setFilterSeverity('all');
+                      setFilterWard('all');
+                    }}
+                    className="text-xs font-extrabold text-brand-600 hover:text-brand-700 underline mt-2 cursor-pointer"
+                  >
+                    Reset search & filters
+                  </button>
+                )}
+              </div>
+            </div>
+          )
         ) : (
           <div className="bg-white py-20 text-center rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center space-y-4">
             <div className="bg-emerald-50 p-4 rounded-full">
