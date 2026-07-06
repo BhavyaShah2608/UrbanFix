@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps, react-hooks/incompatible-library */
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { MapContainer, TileLayer, Popup, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend 
@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import { 
   MapRecenter,
-  CustomDropdown
+  CustomDropdown,
+  createFocusedComplaintMarker
 } from './DashboardUtils';
 
 export default function IngestedReportsTab({
@@ -275,16 +276,32 @@ export default function IngestedReportsTab({
                   };
                   const color = severityColors[record.severity] || '#2563eb';
                   const isFocused = record.id === focusedRecordId;
+                  if (isFocused) {
+                    return (
+                      <Marker 
+                        key={`complaint-marker-${record.id}`} 
+                        position={[record.lat, record.lng]} 
+                        icon={createFocusedComplaintMarker(record.severity)}
+                      >
+                        <Popup>
+                          <div className="text-xs p-1 text-slate-900 font-sans">
+                            <span className="font-bold text-brand-700 text-[13px]">{record.ward_name || 'Unknown'}</span>
+                            <p className="text-[11px] text-slate-600 font-medium mt-1">{record.description}</p>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  }
                   return (
                     <CircleMarker 
                       key={`complaint-marker-${record.id}`} 
                       center={[record.lat, record.lng]} 
-                      radius={isFocused ? 9 : 5.5}
+                      radius={5.5}
                       pathOptions={{
-                        className: isFocused ? 'focused-hotspot-marker' : 'ingested-hotspot-marker',
+                        className: 'ingested-hotspot-marker',
                         fillColor: color,
                         color: '#ffffff',
-                        weight: isFocused ? 3 : 1.5,
+                        weight: 1.5,
                         fillOpacity: 0.95
                       }}
                     >

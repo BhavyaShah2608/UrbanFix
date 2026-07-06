@@ -59,6 +59,27 @@ export const createComplaintMarker = (severity) => {
   });
 };
 
+export const createFocusedComplaintMarker = (severity) => {
+  const colorMap = {
+    High: '#dc2626',
+    Medium: '#d97706',
+    Low: '#059669'
+  };
+  const color = colorMap[severity] || '#2563eb';
+
+  return L.divIcon({
+    className: 'custom-gps-marker',
+    html: `
+      <div class="relative flex items-center justify-center">
+        <span class="absolute inline-flex h-7 w-7 rounded-full opacity-60 animate-ping" style="background-color: ${color};"></span>
+        <span class="relative inline-flex rounded-full h-4 w-4 border-2 border-white shadow-md" style="background-color: ${color};"></span>
+      </div>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+};
+
 export function MapRecenter({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
