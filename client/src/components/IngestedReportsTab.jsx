@@ -363,7 +363,7 @@ export default function IngestedReportsTab({
       </div>
 
       {/* Dataset Table Section */}
-      <div className="glass-card p-5 rounded-2xl overflow-hidden">
+      <div className="glass-card p-5 rounded-2xl relative">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h3 className="text-md font-bold text-slate-800 flex items-center gap-2">
             <Database size={18} className="text-brand-600" />
