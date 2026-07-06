@@ -290,9 +290,9 @@ export default function IngestedReportsTab({
           </div>
         </div>
 
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 flex flex-col">
           {/* Map Container */}
-          <div id="ingestion-map-container" className="glass-card p-5 rounded-2xl h-[460px] flex flex-col relative z-0">
+          <div id="ingestion-map-container" className="glass-card p-5 rounded-2xl flex-1 flex flex-col relative z-0 min-h-[460px]">
             <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
               <Activity size={16} className="text-brand-600 animate-pulse" />
               Live Hotspots Map
@@ -359,28 +359,6 @@ export default function IngestedReportsTab({
               </MapContainer>
             </div>
           </div>
-
-          {/* Info Card */}
-          <div className="glass-card p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-start gap-3 text-slate-600 font-sans">
-              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 shadow-sm shrink-0">
-                <Database size={20} />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-slate-800 leading-tight">
-                  Clean Structured 311 Dataset
-                </h4>
-                <p className="text-[11px] text-slate-400 font-semibold mt-1">
-                  Municipally processed civic complaints ingested and geospatially indexed.
-                </p>
-                <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-500 font-semibold">
-                  <span>{filteredStructured.length} rows</span>
-                  <span className="h-3 w-px bg-slate-200"></span>
-                  <span>8 properties</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -390,6 +368,9 @@ export default function IngestedReportsTab({
           <h3 className="text-md font-bold text-slate-800 flex items-center gap-2">
             <Database size={18} className="text-brand-600" />
             Clean Structured Dataset
+            <span className="text-[10px] text-slate-400 font-semibold bg-slate-50 border border-slate-100 px-2.5 py-0.5 rounded-full ml-1 font-sans">
+              {filteredStructured.length} rows &bull; 8 properties
+            </span>
           </h3>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Sort:</span>
