@@ -23,6 +23,7 @@ export default function IngestedReportsTab({
   const [mapCenter, setMapCenter] = useState([23.0225, 72.5714]);
   const [mapZoom, setMapZoom] = useState(12);
   const [sortBy, setSortBy] = useState('confidence_desc');
+  const [focusedRecordId, setFocusedRecordId] = useState(null);
 
   const filteredStructured = selectedBatch === 'all'
     ? structuredRecords
@@ -61,16 +62,22 @@ export default function IngestedReportsTab({
     return records;
   }, [filteredStructured, sortBy]);
 
-  const handleViewOnMap = (lat, lng) => {
+  const handleViewOnMap = (recordId, lat, lng) => {
     const parsedLat = parseFloat(lat);
     const parsedLng = parseFloat(lng);
     if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+      setFocusedRecordId(recordId);
       setMapCenter([parsedLat, parsedLng]);
       setMapZoom(16);
       const mapElement = document.getElementById("ingestion-map-container");
       if (mapElement) {
         mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+
+      // Keep rapid blinking active for 2.5s (5 blinks at 0.5s each) then restore to standard glow
+      setTimeout(() => {
+        setFocusedRecordId((prev) => (prev === recordId ? null : prev));
+      }, 2500);
     }
   };
 
@@ -267,16 +274,17 @@ export default function IngestedReportsTab({
                     Low: '#059669'
                   };
                   const color = severityColors[record.severity] || '#2563eb';
+                  const isFocused = record.id === focusedRecordId;
                   return (
                     <CircleMarker 
                       key={`complaint-marker-${record.id}`} 
                       center={[record.lat, record.lng]} 
-                      radius={5.5}
+                      radius={isFocused ? 9 : 5.5}
                       pathOptions={{
-                        className: 'ingested-hotspot-marker',
+                        className: isFocused ? 'focused-hotspot-marker' : 'ingested-hotspot-marker',
                         fillColor: color,
                         color: '#ffffff',
-                        weight: 1.5,
+                        weight: isFocused ? 3 : 1.5,
                         fillOpacity: 0.95
                       }}
                     >
@@ -384,7 +392,7 @@ export default function IngestedReportsTab({
                     <td className="py-3.5 px-4">
                       {record.lat ? (
                         <button
-                          onClick={() => handleViewOnMap(record.lat, record.lng)}
+                          onClick={() => handleViewOnMap(record.id, record.lat, record.lng)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold border border-brand-200 rounded-lg text-[10px] transition-all cursor-pointer inline-flex items-center gap-1 active:scale-[0.97]"
                         >
                           <MapPin size={10} className="text-brand-500" />
