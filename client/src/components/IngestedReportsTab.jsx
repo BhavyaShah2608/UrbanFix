@@ -28,6 +28,7 @@ export default function IngestedReportsTab({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterSeverity, setFilterSeverity] = useState('all');
+  const [filterWard, setFilterWard] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const filteredStructured = selectedBatch === 'all'
@@ -45,6 +46,11 @@ export default function IngestedReportsTab({
   const uniqueCategories = useMemo(() => {
     const cats = new Set(structuredRecords.map(r => r.complaint_category).filter(Boolean));
     return Array.from(cats).sort();
+  }, [structuredRecords]);
+
+  const uniqueWards = useMemo(() => {
+    const wrds = new Set(structuredRecords.map(r => r.ward_name).filter(Boolean));
+    return Array.from(wrds).sort();
   }, [structuredRecords]);
 
   const filteredAndSortedRecords = useMemo(() => {
@@ -70,6 +76,11 @@ export default function IngestedReportsTab({
       records = records.filter(r => r.severity === filterSeverity);
     }
 
+    // Apply Ward Filter
+    if (filterWard !== 'all') {
+      records = records.filter(r => r.ward_name === filterWard);
+    }
+
     // Apply Sorting
     if (sortBy === 'confidence_desc') {
       return records.sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
@@ -92,7 +103,7 @@ export default function IngestedReportsTab({
       return records.sort((a, b) => (a.complaint_category || '').localeCompare(b.complaint_category || ''));
     }
     return records;
-  }, [filteredStructured, searchTerm, filterCategory, filterSeverity, sortBy]);
+  }, [filteredStructured, searchTerm, filterCategory, filterSeverity, filterWard, sortBy]);
 
   const handleViewOnMap = (recordId, lat, lng) => {
     const parsedLat = parseFloat(lat);
@@ -422,9 +433,9 @@ export default function IngestedReportsTab({
             >
               <SlidersHorizontal size={14} className={showFilterDropdown ? "text-brand-600" : "text-slate-500"} />
               Filters
-              {(filterCategory !== 'all' || filterSeverity !== 'all') && (
+              {(filterCategory !== 'all' || filterSeverity !== 'all' || filterWard !== 'all') && (
                 <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 text-[10px] text-white px-1 font-bold">
-                  {(filterCategory !== 'all' ? 1 : 0) + (filterSeverity !== 'all' ? 1 : 0)}
+                  {(filterCategory !== 'all' ? 1 : 0) + (filterSeverity !== 'all' ? 1 : 0) + (filterWard !== 'all' ? 1 : 0)}
                 </span>
               )}
             </button>
@@ -442,17 +453,32 @@ export default function IngestedReportsTab({
               <div className="absolute right-0 mt-11 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-5 z-20 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                   <span className="text-xs font-bold text-slate-800">Dataset Filters</span>
-                  {(filterCategory !== 'all' || filterSeverity !== 'all') && (
+                  {(filterCategory !== 'all' || filterSeverity !== 'all' || filterWard !== 'all') && (
                     <button
                       onClick={() => {
                         setFilterCategory('all');
                         setFilterSeverity('all');
+                        setFilterWard('all');
                       }}
                       className="text-[10px] font-extrabold text-brand-600 hover:text-brand-700 cursor-pointer"
                     >
                       Clear All
                     </button>
                   )}
+                </div>
+
+                {/* Ward Filter */}
+                <div className="flex flex-col gap-1.5 text-left">
+                  <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Ward</span>
+                  <CustomDropdown
+                    value={filterWard}
+                    onChange={setFilterWard}
+                    options={[
+                      { value: 'all', label: 'All Wards' },
+                      ...uniqueWards.map(ward => ({ value: ward, label: ward }))
+                    ]}
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Category Filter */}
@@ -502,7 +528,7 @@ export default function IngestedReportsTab({
                 <th className="sticky top-0 bg-slate-50/95 backdrop-blur-sm z-10 border-b border-slate-200/80 py-3.5 px-6 text-right w-28">Confidence</th>
               </tr>
             </thead>
-            <tbody key={`${selectedBatch}-${sortBy}-${searchTerm}-${filterCategory}-${filterSeverity}`} className="divide-y divide-slate-100 text-slate-700 font-semibold animate-in fade-in duration-200">
+            <tbody key={`${selectedBatch}-${sortBy}-${searchTerm}-${filterCategory}-${filterSeverity}-${filterWard}`} className="divide-y divide-slate-100 text-slate-700 font-semibold animate-in fade-in duration-200">
               {paddingTop > 0 && (
                 <tr>
                   <td colSpan={7} style={{ height: `${paddingTop}px` }} />
