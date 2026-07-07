@@ -67,6 +67,7 @@ export default function Review({
   // Selection state
   const [selectedRecordIds, setSelectedRecordIds] = useState(new Set());
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkConfirmAction, setBulkConfirmAction] = useState(null); // 'approve' | 'reject' | null
   
   // Toasts state
   const [toasts, setToasts] = useState([]);
@@ -912,6 +913,61 @@ export default function Review({
           </div>
         ))}
       </div>
+      {/* Bulk Action Confirmation Modal */}
+      {bulkConfirmAction && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 flex flex-col space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-2xl ${bulkConfirmAction === 'approve' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                {bulkConfirmAction === 'approve' ? (
+                  <ShieldCheck size={24} />
+                ) : (
+                  <Trash2 size={24} />
+                )}
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 leading-tight">
+                  {bulkConfirmAction === 'approve' ? 'Confirm Bulk Approval' : 'Confirm Bulk Discard'}
+                </h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                  Action: {bulkConfirmAction === 'approve' ? 'Verify & Ingest' : 'Delete permanently'}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-650 leading-relaxed font-semibold">
+              Are you sure you want to {bulkConfirmAction === 'approve' ? 'approve' : 'discard'} all{' '}
+              <span className={`font-extrabold ${bulkConfirmAction === 'approve' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {selectedRecordIds.size} selected record{selectedRecordIds.size > 1 ? 's' : ''}
+              </span>{' '}
+              from the {activeSubTab === 'flagged' ? 'Flagged Pool' : 'Quarantine Pool'}? This action is permanent and cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setBulkConfirmAction(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const action = bulkConfirmAction;
+                  setBulkConfirmAction(null);
+                  handleBulkAction(action);
+                }}
+                className={`px-5 py-2 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-[0.98] cursor-pointer ${
+                  bulkConfirmAction === 'approve'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100'
+                    : 'bg-rose-600 hover:bg-rose-700 shadow-rose-100'
+                }`}
+              >
+                Yes, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bulk Action Floating Bar */}
       {selectedRecordIds.size > 0 && (
@@ -925,7 +981,7 @@ export default function Review({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => handleBulkAction('approve')}
+              onClick={() => setBulkConfirmAction('approve')}
               disabled={bulkSubmitting}
               className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-brand-100 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
@@ -937,7 +993,7 @@ export default function Review({
               Approve All
             </button>
             <button
-              onClick={() => handleBulkAction('reject')}
+              onClick={() => setBulkConfirmAction('reject')}
               disabled={bulkSubmitting}
               className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
