@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Polygon, Tooltip, Marker, Popup, Polyline, Cir
 import L from 'leaflet';
 import axios from 'axios';
 import {
-  Activity, Filter, Gauge, MapPin, X, ChevronRight, Layers, Loader2, Database, RadioTower
+  Activity, Filter, Gauge, MapPin, X, ChevronRight, Layers, Loader2, Database, RadioTower, CheckCircle
 } from 'lucide-react';
 import {
   MapZoomListener, CustomDropdown
@@ -52,6 +52,10 @@ export default function OverviewTab({
   // Scrubber Timeline (0 = Jan, 1 = Feb, 2 = Mar, 3 = Apr, 4 = May)
   const [selectedMonth, setSelectedMonth] = useState(4);
   const [mapZoomLevel, setMapZoomLevel] = useState(15);
+
+  // Dynamic alert notifications system states
+  const [isAlertDropdownOpen, setIsAlertDropdownOpen] = useState(false);
+  const criticalWards = overviewWards.filter(w => w.risk_level === 'critical');
 
 
   // Group complaints into spatial grid cells for custom clustering
@@ -243,9 +247,80 @@ export default function OverviewTab({
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg text-slate-400 hover:text-brand-600 transition-all duration-150">
-            <RadioTower size={18} />
-            <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full leading-relaxed border border-white">7</span>
+          <div className="relative">
+            <div 
+              onClick={() => setIsAlertDropdownOpen(!isAlertDropdownOpen)}
+              className={`relative cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg text-slate-400 hover:text-brand-600 transition-all duration-150 ${isAlertDropdownOpen ? 'bg-slate-100 text-brand-600' : ''}`}
+            >
+              <RadioTower size={18} className={criticalWards.length > 0 ? 'animate-pulse text-rose-500' : ''} />
+              {criticalWards.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full leading-relaxed border border-white">
+                  {criticalWards.length}
+                </span>
+              )}
+            </div>
+
+            {isAlertDropdownOpen && (
+              <>
+                {/* Overlay to close when clicking outside */}
+                <div 
+                  className="fixed inset-0 z-40 cursor-default" 
+                  onClick={() => setIsAlertDropdownOpen(false)}
+                />
+                
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                    <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <RadioTower size={14} className="text-brand-500" />
+                      Critical Ward Alerts
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${criticalWards.length > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                      {criticalWards.length} active
+                    </span>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                    {criticalWards.length > 0 ? (
+                      criticalWards.map((ward, idx) => (
+                        <div 
+                          key={idx}
+                          onClick={() => {
+                            setSelectedOverviewWard(ward);
+                            setIsOverviewSidebarOpen(true);
+                            setIsAlertDropdownOpen(false);
+                            // If we're on Layer 2, go back to Layer 1 to show the ward on the map
+                            if (currentLayer === 2) {
+                              setCurrentLayer(1);
+                              setSelectedStreetWard(null);
+                              setStreetData(null);
+                            }
+                          }}
+                          className="p-2.5 bg-rose-50/30 hover:bg-rose-50 border border-rose-100 hover:border-rose-200 rounded-xl cursor-pointer transition-all flex items-center justify-between text-left"
+                        >
+                          <div className="space-y-0.5">
+                            <span className="text-xs font-bold text-slate-800">{ward.ward_name}</span>
+                            <span className="text-[10px] text-slate-500 block">Complaints: {ward.complaint_count}</span>
+                          </div>
+                          <span className="text-xs font-extrabold text-rose-600 bg-rose-100/50 px-2 py-0.5 rounded">
+                            {ward.combined_risk_score} / 10
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-6 text-center space-y-2 flex flex-col items-center">
+                        <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-sm">
+                          <CheckCircle size={20} />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-800 block">All Systems Normal</span>
+                          <span className="text-[10px] text-slate-400 font-semibold">No critical wards detected in Ahmedabad.</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2 border-l border-slate-200 pl-4 h-6">
