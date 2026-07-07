@@ -223,7 +223,7 @@ export default function PredictiveTab({
                 <MapContainer
                   center={[23.0364, 72.5611]}
                   zoom={12}
-                  style={{ height: '100%', width: '100%' }}
+                  style={{ height: '100%', width: '100%', minHeight: '400px' }}
                   scrollWheelZoom={true}
                 >
                   <TileLayer

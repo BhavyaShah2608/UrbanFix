@@ -470,7 +470,7 @@ export default function IotTelemetryTab({
             <MapContainer 
               center={mapCenter} 
               zoom={mapZoom} 
-              style={{ height: '100%', width: '100%' }}
+              style={{ height: '100%', width: '100%', minHeight: '400px' }}
               scrollWheelZoom={true}
             >
               <MapRefocusController center={mapCenter} zoom={mapZoom} />

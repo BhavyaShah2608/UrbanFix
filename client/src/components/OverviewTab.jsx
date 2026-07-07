@@ -276,7 +276,7 @@ export default function OverviewTab({
                   </div>
                 )}
 
-                <MapContainer center={[23.03, 72.56]} zoom={12} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
+                <MapContainer center={[23.03, 72.56]} zoom={12} style={{ height: '100%', width: '100%', minHeight: '400px' }} scrollWheelZoom={true}>
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                     url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -356,7 +356,7 @@ export default function OverviewTab({
 
             {/* Premium White Detailed Sidebar Pop-up */}
             {isOverviewSidebarOpen && selectedOverviewWard && (
-              <div className="absolute lg:relative top-0 right-0 h-full w-full lg:w-[420px] bg-white border border-slate-200 lg:border-l shadow-2xl lg:shadow-sm rounded-2xl overflow-hidden z-10 flex flex-col p-6 animate-in slide-in-from-right duration-200">
+              <div className="w-full lg:w-[420px] bg-white border border-slate-200 shadow-lg lg:shadow-sm rounded-2xl overflow-hidden z-10 flex flex-col p-6 animate-in slide-in-from-bottom-5 lg:slide-in-from-right duration-200 relative lg:relative h-auto lg:h-[600px]">
                 {/* Header */}
                 <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                   <div>
@@ -722,7 +722,7 @@ export default function OverviewTab({
                       key={`${selectedStreetWard?.ward_name}-street-map`}
                       center={streetData.center}
                       zoom={15}
-                      style={{ height: '100%', width: '100%' }}
+                      style={{ height: '100%', width: '100%', minHeight: '400px' }}
                       scrollWheelZoom={true}
                     >
                       <TileLayer
