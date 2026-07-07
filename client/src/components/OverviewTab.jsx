@@ -38,6 +38,11 @@ export default function OverviewTab({
   const [streetLoading, setStreetLoading] = useState(false);
   const [streetError, setStreetError] = useState("");
 
+  // Street-level loading progress bar states
+  const [streetProgress, setStreetProgress] = useState(0);
+  const [streetEstTime, setStreetEstTime] = useState(8);
+  const [streetStage, setStreetStage] = useState('Initializing GIS query engine...');
+
   // Map Overlays
   const [showStreetComplaints, setShowStreetComplaints] = useState(true);
   const [showStreetSensors, setShowStreetSensors] = useState(true);
@@ -146,20 +151,55 @@ export default function OverviewTab({
   const fetchStreetData = async (wardName) => {
     setStreetLoading(true);
     setStreetError("");
+    setStreetProgress(0);
+    setStreetEstTime(8);
+    setStreetStage('Initializing GIS query engine...');
     try {
       const res = await axios.get(`${API_BASE_URL}/iot/ward-streets/${encodeURIComponent(wardName)}`);
       if (res.data && res.data.status === 'success') {
+        setStreetProgress(100);
+        setStreetEstTime(0);
+        setStreetStage('Street canvas ready! Rendering layers...');
+        await new Promise(r => setTimeout(r, 500));
         setStreetData(res.data);
       } else {
         setStreetError("Failed to load street level analytics.");
       }
     } catch (err) {
       console.error("Error loading street data:", err);
+      setStreetProgress(100);
+      setStreetStage('Connection failed.');
       setStreetError("Unable to reach the street analytics engine.");
     } finally {
       setStreetLoading(false);
     }
   };
+
+  // Street loading progress bar timer
+  useEffect(() => {
+    if (!streetLoading) return;
+    const timer = setInterval(() => {
+      setStreetProgress(prev => {
+        if (prev >= 95) return 95;
+        let next = prev;
+        if (prev < 30) next += 5;
+        else if (prev < 60) next += 3;
+        else if (prev < 85) next += 1.5;
+        else next += 0.5;
+        next = Math.min(95, next);
+
+        if (next < 20) setStreetStage('Initializing GIS query engine...');
+        else if (next < 40) setStreetStage('Fetching ward boundary polygons...');
+        else if (next < 60) setStreetStage('Loading street-level risk segments...');
+        else if (next < 80) setStreetStage('Mapping IoT sensor coordinates...');
+        else setStreetStage('Assembling spatial analytics canvas...');
+
+        return parseFloat(next.toFixed(1));
+      });
+      setStreetEstTime(prev => (prev <= 1 ? 1 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [streetLoading]);
 
   // Fetch KML boundaries and integrated combined risk scores for the Overview Heatmap
   useEffect(() => {
@@ -614,9 +654,56 @@ export default function OverviewTab({
           </div>
 
           {streetLoading && (
-            <div className="h-[600px] bg-white border border-slate-200 rounded-2xl flex flex-col items-center justify-center space-y-4 shadow-sm">
-              <Loader2 className="animate-spin text-brand-600" size={36} />
-              <span className="text-sm font-medium text-slate-600 animate-pulse">Retrieving street-level geometries and sensor coordinates...</span>
+            <div className="h-[600px] bg-white border border-slate-200 rounded-2xl flex flex-col items-center justify-center shadow-sm p-6">
+              <div className="w-full max-w-sm flex flex-col items-center space-y-5">
+                {/* Pulsing Icon */}
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute inset-0 bg-blue-100 rounded-2xl scale-[1.3] animate-ping opacity-25"></div>
+                  <div className="bg-brand-600 text-white p-3.5 rounded-2xl shadow-lg shadow-blue-200">
+                    <Layers size={22} />
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="text-center space-y-1">
+                  <h4 className="text-base font-bold text-slate-900 tracking-tight">Loading Street Intelligence</h4>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    {streetProgress < 100 ? 'Processing' : 'Ready'}
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full space-y-2">
+                  <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
+                    <span className="transition-all duration-300 truncate max-w-[220px]">{streetStage}</span>
+                    <span className="font-mono text-slate-800 text-sm font-bold ml-2">{Math.round(streetProgress)}%</span>
+                  </div>
+                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-0.5">
+                    <div
+                      style={{ width: `${streetProgress}%` }}
+                      className="h-full bg-gradient-to-r from-blue-500 to-blue-700 rounded-full relative transition-all duration-300 ease-out shadow-inner"
+                    >
+                      <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.3)_50%,transparent_100%)] bg-[length:200%_100%] animate-shimmer progress-shimmer"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Est. Time */}
+                <div className="text-center">
+                  {streetProgress < 100 ? (
+                    <p className="text-xs font-semibold text-slate-400">
+                      {streetEstTime > 1 ? (
+                        <>Estimated time remaining: <span className="font-mono text-slate-700 font-extrabold">~{streetEstTime}s</span></>
+                      ) : (
+                        <span className="text-blue-600 animate-pulse font-bold">Almost there... finalizing data</span>
+                      )}
+                    </p>
+                  ) : (
+                    <p className="text-xs font-bold text-emerald-600 animate-pulse">Data loaded!</p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
