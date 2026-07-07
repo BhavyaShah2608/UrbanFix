@@ -70,7 +70,7 @@ function TelemetryRow({ r, stateStyles, formatReadingTime, onFocusOnSensor }) {
         </td>
 
         {/* Maintenance Action */}
-        <td className="py-3 px-4 text-slate-650 font-medium truncate max-w-[280px]" title={r.maintenance_required}>
+        <td className="py-3 px-4 text-slate-600 font-medium truncate max-w-[280px]" title={r.maintenance_required}>
           {r.maintenance_required || "None"}
         </td>
 

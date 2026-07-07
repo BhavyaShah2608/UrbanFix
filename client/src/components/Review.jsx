@@ -905,7 +905,7 @@ export default function Review({
             <span className="text-xs font-bold">{toast.message}</span>
             <button
               onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-              className="text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+              className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
               aria-label="Dismiss notification"
             >
               <X size={14} />
@@ -927,7 +927,7 @@ export default function Review({
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 leading-tight">
-                  {bulkConfirmAction === 'approve' ? 'Confirm Bulk Approval' : 'Confirm Bulk Discard'}
+                  {bulkConfirmAction === 'approve' ? 'Confirm Approve' : 'Confirm Discard'}
                 </h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
                   Action: {bulkConfirmAction === 'approve' ? 'Verify & Ingest' : 'Delete permanently'}
@@ -935,7 +935,7 @@ export default function Review({
               </div>
             </div>
 
-            <p className="text-xs text-slate-650 leading-relaxed font-semibold">
+            <p className="text-xs text-slate-600 leading-relaxed font-semibold">
               Are you sure you want to {bulkConfirmAction === 'approve' ? 'approve' : 'discard'} all{' '}
               <span className={`font-extrabold ${bulkConfirmAction === 'approve' ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {selectedRecordIds.size} selected record{selectedRecordIds.size > 1 ? 's' : ''}
@@ -1007,7 +1007,7 @@ export default function Review({
             <button
               onClick={() => setSelectedRecordIds(new Set())}
               disabled={bulkSubmitting}
-              className="text-xs font-bold text-slate-400 hover:text-slate-650 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+              className="text-xs font-bold text-slate-400 hover:text-slate-700 px-2 py-1 rounded-lg transition-colors cursor-pointer"
             >
               Clear
             </button>
