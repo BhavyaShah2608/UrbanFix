@@ -1,5 +1,5 @@
-/* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip,
@@ -552,7 +552,7 @@ export default function IotTelemetryTab({
       </div>
 
       {/* Telemetry Risk Sidebar Panel */}
-      {isTelemetrySidebarOpen && (
+      {isTelemetrySidebarOpen && createPortal(
         <>
           <div 
             onClick={() => setIsTelemetrySidebarOpen(false)}
@@ -788,7 +788,8 @@ export default function IotTelemetryTab({
               <span>POLLING RATE: 10S</span>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
